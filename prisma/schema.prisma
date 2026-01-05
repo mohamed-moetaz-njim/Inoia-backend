@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  THERAPIST
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum VoteValue {
+  UP
+  DOWN
+}
+
+enum AiSender {
+  USER
+  AI
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String?  @unique
+  passwordHash    String?
+  role            Role
+  username        String   @unique
+  usernameLocked  Boolean  @default(false)
+  isBanned        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  // Auth fields
+  verificationToken String?
+  resetToken        String?
+  refreshTokenHash  String?
+
+  therapistVerification TherapistVerification? @relation("TherapistCandidate")
+  verifiedTherapists    TherapistVerification[] @relation("TherapistVerifier")
+  
+  posts                 Post[]
+  comments              Comment[]
+  votes                 Vote[]
+  reports               Report[] @relation("UserReports")
+  resolvedReports       Report[] @relation("ReportResolver")
+  
+  notifications         Notification[]
+  aiConversations       AiConversation[]
+  adminActions          AdminAction[] @relation("AdminActions")
+}
+
+model TherapistVerification {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  status                VerificationStatus
+  certificationReference String
+  verifiedByAdminId     String?
+  verifiedAt            DateTime?
+  createdAt             DateTime @default(now())
+
+  user          User   @relation("TherapistCandidate", fields: [userId], references: [id])
+  verifiedBy    User?  @relation("TherapistVerifier", fields: [verifiedByAdminId], references: [id])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  authorId  String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  author   User      @relation(fields: [authorId], references: [id])
+  comments Comment[]
+  votes    Vote[]
+  reports  Report[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  content   String
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  post   Post @relation(fields: [postId], references: [id])
+  author User @relation(fields: [authorId], references: [id])
+  votes  Vote[]
+  reports Report[]
+}
+
+model Vote {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String?
+  commentId String?
+  value     Int
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+  post    Post?    @relation(fields: [postId], references: [id])
+  comment Comment? @relation(fields: [commentId], references: [id])
+}
+
+model Report {
+  id                 String       @id @default(uuid())
+  reporterId         String
+  postId             String?
+  commentId          String?
+  reason             String
+  status             ReportStatus 
+  resolvedByAdminId  String?
+  resolvedAt         DateTime?
+  createdAt          DateTime     @default(now())
+
+  reporter User   @relation("UserReports", fields: [reporterId], references: [id])
+  post     Post?  @relation(fields: [postId], references: [id])
+  comment  Comment? @relation(fields: [commentId], references: [id])
+  resolvedBy User? @relation("ReportResolver", fields: [resolvedByAdminId], references: [id])
+}
+
+model AiConversation {
+  id              String   @id @default(uuid())
+  userId          String
+  lastActivityAt  DateTime
+  createdAt       DateTime @default(now())
+
+  user     User       @relation(fields: [userId], references: [id])
+  messages AiMessage[]
+}
+
+model AiMessage {
+  id              String   @id @default(uuid())
+  conversationId  String
+  sender          AiSender
+  content         String
+  createdAt       DateTime @default(now())
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model AdminAction {
+  id              String   @id @default(uuid())
+  adminId         String
+  actionType      String
+  targetUserId    String?
+  targetPostId    String?
+  targetCommentId String?
+  createdAt       DateTime @default(now())
+
+  admin User @relation("AdminActions", fields: [adminId], references: [id])
+}
