@@ -13,6 +13,7 @@ import { AdminModule } from './admin/admin.module';
 import { TherapistVerificationModule } from './therapist-verification/therapist-verification.module';
 import { ForumModule } from './forum/forum.module';
 import { ReportModule } from './report/report.module';
+import { NotificationModule } from './notification/notification.module';
 import { validationSchema } from './config/validation.schema';
 
 @Module({
@@ -33,6 +34,7 @@ import { validationSchema } from './config/validation.schema';
     TherapistVerificationModule,
     ForumModule,
     ReportModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

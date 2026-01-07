@@ -3,10 +3,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto, CreatePostDto, PaginationQueryDto, UpdatePostDto } from './dto/forum.dto';
 import { ensureOwnership } from '../common/utils/authorization.utils';
 import { Role } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ForumService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService,
+    private usersService: UsersService,
+  ) {}
 
   private getAuthorSelect() {
     return {
@@ -255,6 +261,35 @@ export class ForumService {
     });
 
     const { author, ...commentData } = comment;
+
+    // --- Notifications Logic ---
+    const commentAuthorUsername = author.username;
+
+    // 1. Notify Post Author
+    if (post.authorId !== userId) {
+      const content = `@${commentAuthorUsername} commented on your post '${post.title}'`;
+      await this.notificationService.createNotification(post.authorId, content);
+    }
+
+    // 2. Notify Mentions
+    const mentions = dto.content.match(/@([a-zA-Z0-9_]+)/g);
+    if (mentions) {
+      const uniqueMentions = [...new Set(mentions)]; // Remove duplicates
+      
+      for (const mention of uniqueMentions) {
+        const username = mention.substring(1); // Remove @
+        
+        // Skip self-mention (though unlikely to find self by username if not checked, but good to be safe)
+        // Also skip if the mentioned user is the one commenting (handled by user.id !== userId check below)
+        
+        const user = await this.usersService.findOne({ username });
+        if (user && user.id !== userId) {
+           const content = `@${commentAuthorUsername} mentioned you in a comment`;
+           await this.notificationService.createNotification(user.id, content);
+        }
+      }
+    }
+
     return {
         ...commentData,
         author: this.mapAuthor(author),

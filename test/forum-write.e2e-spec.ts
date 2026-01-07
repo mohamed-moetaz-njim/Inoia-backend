@@ -31,6 +31,7 @@ describe('Forum Write Operations (e2e)', () => {
   });
 
   const cleanDb = async () => {
+      await prisma.notification.deleteMany();
       await prisma.vote.deleteMany();
       await prisma.comment.deleteMany();
       await prisma.post.deleteMany();

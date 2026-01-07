@@ -6,6 +6,7 @@ A secure, scalable, and production-ready backend for a student-focused mental he
 - **Full Authentication**: JWT with refresh tokens, Argon2 hashing, email verification, password reset
 - **Role-Based Access Control**: STUDENT, THERAPIST, and ADMIN roles
 - **Forum System**: Posts, comments, pagination, ownership enforcement
+- **Notifications**: Real-time alerts for mentions and comments, with unread counting
 - **Content Reporting & Moderation**: User reports with admin review, resolution, and audit trail
 - **Therapist Verification**: Dedicated workflow for credential review
 - **Safety & Security**: Soft deletes, rate limiting, input validation, Helmet headers
