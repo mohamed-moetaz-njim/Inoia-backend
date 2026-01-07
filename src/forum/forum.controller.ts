@@ -14,9 +14,11 @@ export class ForumController {
 
   @Public()
   @Get('posts')
-  async findAll(@Query() query: PaginationQueryDto) {
-    // List logic is strictly public/non-deleted, so no user context needed
-    return this.forumService.findAllPosts(query);
+  async findAll(
+    @Query() query: PaginationQueryDto,
+    @GetCurrentUser() user: JwtPayload | undefined,
+  ) {
+    return this.forumService.findAllPosts(query, user?.sub);
   }
 
   @Public()

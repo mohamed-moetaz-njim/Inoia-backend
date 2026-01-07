@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForumService } from './forum.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
+import { UsersService } from '../users/users.service';
 import { NotFoundException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 
@@ -21,6 +23,14 @@ const mockPrismaService = {
   },
 };
 
+const mockNotificationService = {
+  createNotification: jest.fn(),
+};
+
+const mockUsersService = {
+  findOne: jest.fn(),
+};
+
 describe('ForumService', () => {
   let service: ForumService;
   let prisma: typeof mockPrismaService;
@@ -30,6 +40,8 @@ describe('ForumService', () => {
       providers: [
         ForumService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: NotificationService, useValue: mockNotificationService },
+        { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
 
@@ -58,6 +70,7 @@ describe('ForumService', () => {
     updatedAt: new Date(),
     deletedAt: null,
     author: mockAuthor,
+    votes: [], // Added votes array
   };
 
   describe('findAllPosts', () => {
@@ -74,6 +87,7 @@ describe('ForumService', () => {
         role: Role.STUDENT,
         therapistProfile: undefined,
       });
+      expect(result.data[0].voteCount).toBe(0);
     });
   });
 
@@ -83,6 +97,7 @@ describe('ForumService', () => {
 
       const result = await service.findOnePost('post1');
       expect(result.id).toBe('post1');
+      expect(result.voteCount).toBe(0);
     });
 
     it('should throw NotFoundException if post not found', async () => {
@@ -185,6 +200,23 @@ describe('ForumService', () => {
           await service.createComment('user1', 'post1', { content: 'comment' });
 
           expect(prisma.comment.create).toHaveBeenCalled();
+          // Notification service should not be called if author is same
+      });
+
+      it('should notify author on comment', async () => {
+        prisma.post.findUnique.mockResolvedValue({
+            ...mockPost,
+            authorId: 'other_user'
+        });
+        prisma.comment.create.mockResolvedValue({
+            id: 'c1',
+            author: mockAuthor,
+            content: 'comment'
+        });
+
+        await service.createComment('user1', 'post1', { content: 'comment' });
+
+        expect(mockNotificationService.createNotification).toHaveBeenCalled();
       });
 
       it('should throw NotFoundException if post not found', async () => {
@@ -216,12 +248,14 @@ describe('ForumService', () => {
           prisma.comment.findMany.mockResolvedValue([{
               id: 'c1',
               author: mockAuthor,
-              content: 'c'
+              content: 'c',
+              votes: [] // Added votes array
           }]);
           prisma.comment.count.mockResolvedValue(1);
 
           const result = await service.findComments('post1', {});
           expect(result.data).toHaveLength(1);
+          expect(result.data[0].voteCount).toBe(0);
       });
   });
 });

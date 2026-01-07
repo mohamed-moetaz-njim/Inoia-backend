@@ -40,7 +40,7 @@ export class ForumService {
     };
   }
 
-  async findAllPosts(query: PaginationQueryDto) {
+  async findAllPosts(query: PaginationQueryDto, currentUserId?: string) {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
@@ -55,6 +55,9 @@ export class ForumService {
         include: {
           author: {
             select: this.getAuthorSelect(),
+          },
+          votes: {
+            select: { userId: true, value: true },
           },
         },
         orderBy: {
@@ -75,11 +78,17 @@ export class ForumService {
 
     return {
       data: posts.map(post => {
-        const { author, ...postData } = post;
+        const { author, votes, ...postData } = post;
         // Clean up internal author fields
         const { id, deletedAt, therapistVerification, ...restAuthor } = author;
+        
+        const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
+        const userVote = currentUserId ? (votes.find(v => v.userId === currentUserId)?.value || 0) : 0;
+
         return {
           ...postData,
+          voteCount,
+          userVote,
           author: this.mapAuthor(author),
         };
       }),
@@ -99,6 +108,9 @@ export class ForumService {
         author: {
           select: this.getAuthorSelect(),
         },
+        votes: {
+          select: { userId: true, value: true },
+        },
       },
     });
 
@@ -112,11 +124,16 @@ export class ForumService {
       }
     }
 
-    const { author, ...postData } = post;
+    const { author, votes, ...postData } = post;
     const { id: authorId, deletedAt, therapistVerification, ...restAuthor } = author;
+
+    const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
+    const userVote = currentUserId ? (votes.find(v => v.userId === currentUserId)?.value || 0) : 0;
 
     return {
       ...postData,
+      voteCount,
+      userVote,
       author: this.mapAuthor(author),
     };
   }
@@ -141,6 +158,9 @@ export class ForumService {
           author: {
             select: this.getAuthorSelect(),
           },
+          votes: {
+            select: { userId: true, value: true },
+          },
         },
         orderBy: {
           createdAt: 'asc',
@@ -162,10 +182,16 @@ export class ForumService {
 
     return {
       data: comments.map(comment => {
-        const { author, ...commentData } = comment;
+        const { author, votes, ...commentData } = comment;
         const { id, deletedAt, therapistVerification, ...restAuthor } = author;
+
+        const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
+        const userVote = currentUserId ? (votes.find(v => v.userId === currentUserId)?.value || 0) : 0;
+
         return {
           ...commentData,
+          voteCount,
+          userVote,
           author: this.mapAuthor(author),
         };
       }),

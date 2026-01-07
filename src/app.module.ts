@@ -14,6 +14,7 @@ import { TherapistVerificationModule } from './therapist-verification/therapist-
 import { ForumModule } from './forum/forum.module';
 import { ReportModule } from './report/report.module';
 import { NotificationModule } from './notification/notification.module';
+import { VoteModule } from './vote/vote.module';
 import { validationSchema } from './config/validation.schema';
 
 @Module({
@@ -33,6 +34,7 @@ import { validationSchema } from './config/validation.schema';
     AdminModule,
     TherapistVerificationModule,
     ForumModule,
+    VoteModule,
     ReportModule,
     NotificationModule,
   ],
