@@ -276,4 +276,48 @@ describe('AuthService', () => {
       });
     });
   });
+
+  describe('resendVerificationEmail', () => {
+    it('should send email if user exists and is unverified', async () => {
+      mockUsersService.findOne.mockResolvedValue({
+        id: '1',
+        verificationToken: 'old-token',
+      });
+      mockEmailService.sendVerificationEmail.mockResolvedValue({ id: 'email_id' });
+
+      await service.resendVerificationEmail('test@example.com');
+
+      expect(mockUsersService.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: { verificationToken: 'hashed-value' },
+      });
+      expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(
+        'test@example.com',
+        'mock-uuid',
+      );
+    });
+
+    it('should return success but NOT send email if user does not exist', async () => {
+      mockUsersService.findOne.mockResolvedValue(null);
+
+      const result = await service.resendVerificationEmail('test@example.com');
+
+      expect(mockUsersService.update).not.toHaveBeenCalled();
+      expect(mockEmailService.sendVerificationEmail).not.toHaveBeenCalled();
+      expect(result).toHaveProperty('message');
+    });
+
+    it('should return success but NOT send email if user is already verified', async () => {
+      mockUsersService.findOne.mockResolvedValue({
+        id: '1',
+        verificationToken: null,
+      });
+
+      const result = await service.resendVerificationEmail('test@example.com');
+
+      expect(mockUsersService.update).not.toHaveBeenCalled();
+      expect(mockEmailService.sendVerificationEmail).not.toHaveBeenCalled();
+      expect(result).toHaveProperty('message');
+    });
+  });
 });

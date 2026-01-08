@@ -18,6 +18,7 @@ import { Public, GetCurrentUserId, GetCurrentUser } from '../common/decorators';
 import { RtGuard } from '../common/guards';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -44,6 +45,17 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'Invalid credentials.' })
   signin(@Body() dto: LoginDto) {
     return this.authService.signin(dto);
+  }
+
+  @Public()
+  @Post('resend-verification')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 600000 } }) // 3 requests per 10 minutes
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend verification email' })
+  @ApiResponse({ status: 200, description: 'Verification email sent if user exists and is unverified.' })
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerificationEmail(dto.email);
   }
 
   @Post('logout')

@@ -24,14 +24,15 @@ export class AuthService {
   ) {}
 
   async signup(dto: RegisterDto) {
-    const emailExists = await this.usersService.isEmailTaken(dto.email);
+    const email = dto.email.toLowerCase();
+    const emailExists = await this.usersService.isEmailTaken(email);
     if (emailExists) throw new ConflictException('Email already exists');
 
     const passwordHash = await argon2.hash(dto.password);
 
     // Create user as STUDENT by default
     const user = await this.usersService.create({
-      email: dto.email,
+      email,
       passwordHash,
       role: Role.STUDENT,
       username: '', // Will be generated
@@ -53,6 +54,35 @@ export class AuthService {
       message: 'User registered. Please check your email to verify your account.',
       userId: user.id,
     };
+  }
+
+  async resendVerificationEmail(emailInput: string) {
+    const email = emailInput.toLowerCase();
+    const user = await this.usersService.findOne({ email });
+    
+    // Security: Don't reveal if user exists
+    if (!user) {
+      return { message: 'If your email is registered, a verification link has been sent.' };
+    }
+
+    // If already verified, return success (don't send email)
+    if (!user.verificationToken) {
+      return { message: 'Email is already verified.' };
+    }
+
+    // Generate NEW verification token
+    const verificationToken = uuidv4();
+    const hashedVerificationToken = await argon2.hash(verificationToken);
+
+    await this.usersService.update({
+      where: { id: user.id },
+      data: { verificationToken: hashedVerificationToken },
+    });
+
+    // Send email
+    await this.emailService.sendVerificationEmail(email, verificationToken);
+
+    return { message: 'If your email is registered, a verification link has been sent.' };
   }
 
   async signin(dto: LoginDto) {
@@ -102,7 +132,8 @@ export class AuthService {
     return tokens;
   }
 
-  async verifyEmail(email: string, token: string) {
+  async verifyEmail(emailInput: string, token: string) {
+    const email = emailInput.toLowerCase();
     const user = await this.usersService.findOne({ email });
     if (!user || !user.verificationToken)
       throw new BadRequestException('Invalid request');
