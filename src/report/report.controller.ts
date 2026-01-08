@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ReportService } from './report.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
@@ -13,7 +22,10 @@ export class ReportController {
 
   @UseGuards(ThrottlerGuard)
   @Post('reports')
-  createReport(@GetCurrentUser('sub') userId: string, @Body() dto: CreateReportDto) {
+  createReport(
+    @GetCurrentUser('sub') userId: string,
+    @Body() dto: CreateReportDto,
+  ) {
     return this.reportService.createReport(userId, dto);
   }
 

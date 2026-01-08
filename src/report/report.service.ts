@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
@@ -13,7 +17,9 @@ export class ReportService {
 
     // Validation: Exactly one of postId or commentId
     if ((postId && commentId) || (!postId && !commentId)) {
-      throw new BadRequestException('Exactly one of postId or commentId must be provided');
+      throw new BadRequestException(
+        'Exactly one of postId or commentId must be provided',
+      );
     }
 
     let targetAuthorId: string;
@@ -24,7 +30,9 @@ export class ReportService {
       if (!post) throw new NotFoundException('Post not found');
       targetAuthorId = post.authorId;
     } else {
-      const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+      const comment = await this.prisma.comment.findUnique({
+        where: { id: commentId },
+      });
       if (!comment) throw new NotFoundException('Comment not found');
       targetAuthorId = comment.authorId;
     }
@@ -47,7 +55,9 @@ export class ReportService {
     });
 
     if (existingReport) {
-      throw new BadRequestException('You already have a pending report for this item');
+      throw new BadRequestException(
+        'You already have a pending report for this item',
+      );
     }
 
     // Create report
@@ -66,7 +76,7 @@ export class ReportService {
 
   async findAll(page: number = 1, limit: number = 50, status?: ReportStatus) {
     const skip = (page - 1) * limit;
-    
+
     const where: Prisma.ReportWhereInput = status ? { status } : {};
 
     const [reports, total] = await Promise.all([
@@ -80,10 +90,19 @@ export class ReportService {
             select: { id: true, username: true },
           },
           post: {
-            select: { id: true, title: true, content: true, author: { select: { id: true, username: true } } },
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              author: { select: { id: true, username: true } },
+            },
           },
           comment: {
-            select: { id: true, content: true, author: { select: { id: true, username: true } } },
+            select: {
+              id: true,
+              content: true,
+              author: { select: { id: true, username: true } },
+            },
           },
         },
       }),
@@ -141,7 +160,7 @@ export class ReportService {
       let actionType = 'REPORT_UPDATED';
       if (status === ReportStatus.RESOLVED) actionType = 'REPORT_RESOLVED';
       if (status === ReportStatus.DISMISSED) actionType = 'REPORT_DISMISSED';
-      
+
       // If content was deleted, maybe we want a specific action or just log it in the note?
       // Prompt says: "actionType: e.g., 'REPORT_RESOLVED', 'REPORT_DISMISSED', 'CONTENT_REMOVED'"
       // I will log the primary action. If content removed, maybe log that too or prioritize it?
@@ -152,12 +171,16 @@ export class ReportService {
       // Let's use REPORT_RESOLVED and append note about deletion, or create two entries?
       // "Always create an AdminAction log entry" implies one.
       // If deleteContent is true, I will use CONTENT_REMOVED. Else REPORT_RESOLVED/DISMISSED.
-      
+
       if (status === ReportStatus.RESOLVED && deleteContent) {
         actionType = 'CONTENT_REMOVED';
       }
 
-      const targetUserId = report.post ? report.post.authorId : report.comment ? report.comment.authorId : null;
+      const targetUserId = report.post
+        ? report.post.authorId
+        : report.comment
+          ? report.comment.authorId
+          : null;
 
       await tx.adminAction.create({
         data: {
@@ -166,14 +189,7 @@ export class ReportService {
           targetPostId: report.postId,
           targetCommentId: report.commentId,
           targetUserId,
-          // Note is not in schema for AdminAction based on previous search, but check schema again?
-          // Schema: id, adminId, actionType, targetUserId, targetPostId, targetCommentId, createdAt.
-          // No note field. So actionNote from DTO is just for context, maybe I should append to actionType or ignore?
-          // Prompt says: "actionNote?: string (optional message for logging)"
-          // Since schema has no note, maybe I can't store it unless I modify schema (forbidden).
-          // Or maybe I store it in actionType like "REPORT_RESOLVED: Note"? A bit hacky.
-          // Or maybe I just ignore it if there's no field. 
-          // I will verify AdminAction schema one last time.
+          // details: actionNote, // 'details' field added in migration 20260105 - BUT NOT IN CURRENT SCHEMA
         },
       });
 

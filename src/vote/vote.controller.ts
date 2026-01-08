@@ -15,12 +15,18 @@ export class VoteController {
   }
 
   @Get('posts/:id/vote')
-  async getPostVote(@GetCurrentUserId() userId: string, @Param('id') postId: string) {
+  async getPostVote(
+    @GetCurrentUserId() userId: string,
+    @Param('id') postId: string,
+  ) {
     return this.voteService.getPostVote(userId, postId);
   }
 
   @Get('comments/:id/vote')
-  async getCommentVote(@GetCurrentUserId() userId: string, @Param('id') commentId: string) {
+  async getCommentVote(
+    @GetCurrentUserId() userId: string,
+    @Param('id') commentId: string,
+  ) {
     return this.voteService.getCommentVote(userId, commentId);
   }
 }

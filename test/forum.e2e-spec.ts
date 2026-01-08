@@ -27,14 +27,17 @@ describe('Forum Read-Only (e2e)', () => {
   });
 
   const cleanDb = async () => {
-      await prisma.vote.deleteMany();
-      await prisma.comment.deleteMany();
-      await prisma.post.deleteMany();
-      await prisma.user.deleteMany();
+    await prisma.aiMessage.deleteMany();
+    await prisma.aiConversation.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.vote.deleteMany();
+    await prisma.comment.deleteMany();
+    await prisma.post.deleteMany();
+    await prisma.user.deleteMany();
   };
 
   beforeEach(async () => {
-      await cleanDb();
+    await cleanDb();
   });
 
   describe('GET /forum/posts', () => {
@@ -65,118 +68,156 @@ describe('Forum Read-Only (e2e)', () => {
         },
       });
 
-      const res = await request(app.getHttpServer()).get('/forum/posts').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/forum/posts')
+        .expect(200);
       expect(res.body.data).toHaveLength(1);
       expect(res.body.data[0].title).toBe('Visible Post');
     });
 
     it('should exclude posts from soft-deleted users', async () => {
-        const deletedUser = await prisma.user.create({
-            data: {
-                email: 'deleted@test.com',
-                username: 'DeletedUser',
-                role: Role.STUDENT,
-                deletedAt: new Date(),
-            }
-        });
+      const deletedUser = await prisma.user.create({
+        data: {
+          email: 'deleted@test.com',
+          username: 'DeletedUser',
+          role: Role.STUDENT,
+          deletedAt: new Date(),
+        },
+      });
 
-        await prisma.post.create({
-            data: {
-                authorId: deletedUser.id,
-                title: 'Ghost Post',
-                content: 'Content',
-            }
-        });
+      await prisma.post.create({
+        data: {
+          authorId: deletedUser.id,
+          title: 'Ghost Post',
+          content: 'Content',
+        },
+      });
 
-        const res = await request(app.getHttpServer()).get('/forum/posts').expect(200);
-        expect(res.body.data).toHaveLength(0);
+      const res = await request(app.getHttpServer())
+        .get('/forum/posts')
+        .expect(200);
+      expect(res.body.data).toHaveLength(0);
     });
 
     it('Invalid token on public forum route returns 401', async () => {
-        await request(app.getHttpServer())
-            .get('/forum/posts')
-            .set('Authorization', 'Bearer invalid_token')
-            .expect(401);
+      await request(app.getHttpServer())
+        .get('/forum/posts')
+        .set('Authorization', 'Bearer invalid_token')
+        .expect(401);
     });
   });
 
   describe('GET /forum/posts/:id', () => {
     it('Guest receives 404 for deleted post', async () => {
-        const author = await prisma.user.create({
-            data: { email: 'a@test.com', username: 'A', role: Role.STUDENT }
-        });
-        const post = await prisma.post.create({
-            data: { authorId: author.id, title: 'Deleted', content: 'C', deletedAt: new Date() }
-        });
+      const author = await prisma.user.create({
+        data: { email: 'a@test.com', username: 'A', role: Role.STUDENT },
+      });
+      const post = await prisma.post.create({
+        data: {
+          authorId: author.id,
+          title: 'Deleted',
+          content: 'C',
+          deletedAt: new Date(),
+        },
+      });
 
-        await request(app.getHttpServer()).get(`/forum/posts/${post.id}`).expect(404);
+      await request(app.getHttpServer())
+        .get(`/forum/posts/${post.id}`)
+        .expect(404);
     });
 
     it('Author can view own deleted post', async () => {
-        const passwordHash = await argon2.hash('pass');
-        const author = await prisma.user.create({
-            data: { email: 'me@test.com', username: 'Me', role: Role.STUDENT, passwordHash }
-        });
-        const post = await prisma.post.create({
-            data: { authorId: author.id, title: 'My Deleted', content: 'C', deletedAt: new Date() }
-        });
+      const passwordHash = await argon2.hash('pass');
+      const author = await prisma.user.create({
+        data: {
+          email: 'me@test.com',
+          username: 'Me',
+          role: Role.STUDENT,
+          passwordHash,
+        },
+      });
+      const post = await prisma.post.create({
+        data: {
+          authorId: author.id,
+          title: 'My Deleted',
+          content: 'C',
+          deletedAt: new Date(),
+        },
+      });
 
-        // Login
-        const loginRes = await request(app.getHttpServer())
-            .post('/auth/signin')
-            .send({ email: 'me@test.com', password: 'pass' });
-        const token = loginRes.body.accessToken;
+      // Login
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({ email: 'me@test.com', password: 'pass' });
+      const token = loginRes.body.accessToken;
 
-        const res = await request(app.getHttpServer())
-            .get(`/forum/posts/${post.id}`)
-            .set('Authorization', `Bearer ${token}`)
-            .expect(200);
-        
-        expect(res.body.title).toBe('My Deleted');
+      const res = await request(app.getHttpServer())
+        .get(`/forum/posts/${post.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.title).toBe('My Deleted');
     });
   });
 
   describe('GET /forum/posts/:id/comments', () => {
-      it('Non-author receives 404 for deleted comment', async () => {
-        const author = await prisma.user.create({
-            data: { email: 'a@test.com', username: 'A', role: Role.STUDENT }
-        });
-        const post = await prisma.post.create({
-            data: { authorId: author.id, title: 'P', content: 'C' }
-        });
-        await prisma.comment.create({
-            data: { postId: post.id, authorId: author.id, content: 'Deleted Comment', deletedAt: new Date() }
-        });
-
-        const res = await request(app.getHttpServer()).get(`/forum/posts/${post.id}/comments`).expect(200);
-        // Should return empty list or filter out the deleted comment
-        expect(res.body.data).toHaveLength(0);
+    it('Non-author receives 404 for deleted comment', async () => {
+      const author = await prisma.user.create({
+        data: { email: 'a@test.com', username: 'A', role: Role.STUDENT },
+      });
+      const post = await prisma.post.create({
+        data: { authorId: author.id, title: 'P', content: 'C' },
+      });
+      await prisma.comment.create({
+        data: {
+          postId: post.id,
+          authorId: author.id,
+          content: 'Deleted Comment',
+          deletedAt: new Date(),
+        },
       });
 
-      it('Author can view own deleted comment', async () => {
-        const passwordHash = await argon2.hash('pass');
-        const author = await prisma.user.create({
-            data: { email: 'me@test.com', username: 'Me', role: Role.STUDENT, passwordHash }
-        });
-        const post = await prisma.post.create({
-            data: { authorId: author.id, title: 'P', content: 'C' }
-        });
-        await prisma.comment.create({
-            data: { postId: post.id, authorId: author.id, content: 'My Deleted Comment', deletedAt: new Date() }
-        });
+      const res = await request(app.getHttpServer())
+        .get(`/forum/posts/${post.id}/comments`)
+        .expect(200);
+      // Should return empty list or filter out the deleted comment
+      expect(res.body.data).toHaveLength(0);
+    });
 
-        const loginRes = await request(app.getHttpServer())
-            .post('/auth/signin')
-            .send({ email: 'me@test.com', password: 'pass' });
-        const token = loginRes.body.accessToken;
-
-        const res = await request(app.getHttpServer())
-            .get(`/forum/posts/${post.id}/comments`)
-            .set('Authorization', `Bearer ${token}`)
-            .expect(200);
-        
-        expect(res.body.data).toHaveLength(1);
-        expect(res.body.data[0].content).toBe('My Deleted Comment');
+    it('Author can view own deleted comment', async () => {
+      const passwordHash = await argon2.hash('pass');
+      const author = await prisma.user.create({
+        data: {
+          email: 'me@test.com',
+          username: 'Me',
+          role: Role.STUDENT,
+          passwordHash,
+        },
       });
+      const post = await prisma.post.create({
+        data: { authorId: author.id, title: 'P', content: 'C' },
+      });
+      await prisma.comment.create({
+        data: {
+          postId: post.id,
+          authorId: author.id,
+          content: 'My Deleted Comment',
+          deletedAt: new Date(),
+        },
+      });
+
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({ email: 'me@test.com', password: 'pass' });
+      const token = loginRes.body.accessToken;
+
+      const res = await request(app.getHttpServer())
+        .get(`/forum/posts/${post.id}/comments`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].content).toBe('My Deleted Comment');
+    });
   });
 });

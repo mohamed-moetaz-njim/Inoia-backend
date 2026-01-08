@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVoteDto } from './dto/create-vote.dto';
 
@@ -10,7 +15,9 @@ export class VoteService {
     const { postId, commentId, value } = dto;
 
     if ((!postId && !commentId) || (postId && commentId)) {
-      throw new BadRequestException('Provide exactly one of postId or commentId');
+      throw new BadRequestException(
+        'Provide exactly one of postId or commentId',
+      );
     }
 
     let targetAuthorId: string;
@@ -22,14 +29,16 @@ export class VoteService {
       targetAuthorId = post.authorId;
       targetDeletedAt = post.deletedAt;
     } else {
-      const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+      const comment = await this.prisma.comment.findUnique({
+        where: { id: commentId },
+      });
       if (!comment) throw new NotFoundException('Comment not found');
       targetAuthorId = comment.authorId;
       targetDeletedAt = comment.deletedAt;
     }
 
     if (targetDeletedAt) {
-        throw new NotFoundException('Cannot vote on deleted content');
+      throw new NotFoundException('Cannot vote on deleted content');
     }
 
     if (targetAuthorId === userId) {

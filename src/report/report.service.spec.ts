@@ -52,33 +52,57 @@ describe('ReportService', () => {
   describe('createReport', () => {
     it('should create a report successfully for a post', async () => {
       const dto = { reason: 'Spam', postId: 'post-id' };
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: 'post-id', authorId: 'other-user' });
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: 'post-id',
+        authorId: 'other-user',
+      });
       mockPrismaService.report.findFirst.mockResolvedValue(null);
-      mockPrismaService.report.create.mockResolvedValue({ id: 'report-id', ...dto, status: ReportStatus.PENDING });
+      mockPrismaService.report.create.mockResolvedValue({
+        id: 'report-id',
+        ...dto,
+        status: ReportStatus.PENDING,
+      });
 
       const result = await service.createReport('user-id', dto);
-      expect(result).toEqual({ message: 'Report submitted successfully', reportId: 'report-id' });
+      expect(result).toEqual({
+        message: 'Report submitted successfully',
+        reportId: 'report-id',
+      });
       expect(mockPrismaService.report.create).toHaveBeenCalled();
     });
 
     it('should prevent self-reporting', async () => {
       const dto = { reason: 'Spam', postId: 'post-id' };
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: 'post-id', authorId: 'user-id' });
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: 'post-id',
+        authorId: 'user-id',
+      });
 
-      await expect(service.createReport('user-id', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createReport('user-id', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should prevent duplicate pending reports', async () => {
       const dto = { reason: 'Spam', postId: 'post-id' };
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: 'post-id', authorId: 'other-user' });
-      mockPrismaService.report.findFirst.mockResolvedValue({ id: 'existing-report' });
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: 'post-id',
+        authorId: 'other-user',
+      });
+      mockPrismaService.report.findFirst.mockResolvedValue({
+        id: 'existing-report',
+      });
 
-      await expect(service.createReport('user-id', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createReport('user-id', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw if neither postId nor commentId provided', async () => {
       const dto = { reason: 'Spam' };
-      await expect(service.createReport('user-id', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createReport('user-id', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -88,26 +112,33 @@ describe('ReportService', () => {
       const dto = { status: ReportStatus.RESOLVED };
       const adminId = 'admin-id';
 
-      mockPrismaService.report.findUnique.mockResolvedValue({ 
-        id: reportId, 
-        postId: 'post-id', 
-        post: { authorId: 'author-id' } 
+      mockPrismaService.report.findUnique.mockResolvedValue({
+        id: reportId,
+        postId: 'post-id',
+        post: { authorId: 'author-id' },
       });
-      mockPrismaService.report.update.mockResolvedValue({ id: reportId, status: ReportStatus.RESOLVED });
+      mockPrismaService.report.update.mockResolvedValue({
+        id: reportId,
+        status: ReportStatus.RESOLVED,
+      });
 
       await service.update(reportId, dto, adminId);
 
-      expect(mockPrismaService.report.update).toHaveBeenCalledWith(expect.objectContaining({
-        where: { id: reportId },
-        data: expect.objectContaining({ status: ReportStatus.RESOLVED })
-      }));
-      expect(mockPrismaService.adminAction.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({
-          adminId,
-          actionType: 'REPORT_RESOLVED',
-          targetPostId: 'post-id'
-        })
-      }));
+      expect(mockPrismaService.report.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: reportId },
+          data: expect.objectContaining({ status: ReportStatus.RESOLVED }),
+        }),
+      );
+      expect(mockPrismaService.adminAction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            adminId,
+            actionType: 'REPORT_RESOLVED',
+            targetPostId: 'post-id',
+          }),
+        }),
+      );
     });
 
     it('should delete content if requested', async () => {
@@ -115,21 +146,25 @@ describe('ReportService', () => {
       const dto = { status: ReportStatus.RESOLVED, deleteContent: true };
       const adminId = 'admin-id';
 
-      mockPrismaService.report.findUnique.mockResolvedValue({ 
-        id: reportId, 
-        postId: 'post-id', 
-        post: { authorId: 'author-id' } 
+      mockPrismaService.report.findUnique.mockResolvedValue({
+        id: reportId,
+        postId: 'post-id',
+        post: { authorId: 'author-id' },
       });
-      
+
       await service.update(reportId, dto, adminId);
 
-      expect(mockPrismaService.post.update).toHaveBeenCalledWith(expect.objectContaining({
-        where: { id: 'post-id' },
-        data: { deletedAt: expect.any(Date) }
-      }));
-      expect(mockPrismaService.adminAction.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ actionType: 'CONTENT_REMOVED' })
-      }));
+      expect(mockPrismaService.post.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'post-id' },
+          data: { deletedAt: expect.any(Date) },
+        }),
+      );
+      expect(mockPrismaService.adminAction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ actionType: 'CONTENT_REMOVED' }),
+        }),
+      );
     });
   });
 });

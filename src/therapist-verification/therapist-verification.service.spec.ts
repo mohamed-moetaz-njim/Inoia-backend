@@ -21,7 +21,9 @@ describe('TherapistVerificationService', () => {
       ],
     }).compile();
 
-    service = module.get<TherapistVerificationService>(TherapistVerificationService);
+    service = module.get<TherapistVerificationService>(
+      TherapistVerificationService,
+    );
   });
 
   it('should be defined', () => {

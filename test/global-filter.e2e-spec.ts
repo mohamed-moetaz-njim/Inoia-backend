@@ -1,5 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, BadRequestException, InternalServerErrorException, Get, Controller } from '@nestjs/common';
+import {
+  INestApplication,
+  BadRequestException,
+  InternalServerErrorException,
+  Get,
+  Controller,
+} from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
@@ -8,17 +14,17 @@ import { Public } from '../src/common/decorators';
 
 @Controller('test-exceptions')
 class TestExceptionsController {
-    @Public()
-    @Get('error')
-    throwError() {
-        throw new Error('Simulated Error');
-    }
+  @Public()
+  @Get('error')
+  throwError() {
+    throw new Error('Simulated Error');
+  }
 
-    @Public()
-    @Get('bad-request')
-    throwBadRequest() {
-        throw new BadRequestException('Validation failed');
-    }
+  @Public()
+  @Get('bad-request')
+  throwBadRequest() {
+    throw new BadRequestException('Validation failed');
+  }
 }
 
 describe('GlobalExceptionFilter (e2e)', () => {
@@ -31,16 +37,16 @@ describe('GlobalExceptionFilter (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Register filter manually for testing env as main.ts is not executed here
     const httpAdapter = app.get(HttpAdapterHost);
     app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
-    
+
     await app.init();
   });
 
   afterEach(async () => {
-      await app.close();
+    await app.close();
   });
 
   it('should handle 404 Not Found', () => {
@@ -49,10 +55,10 @@ describe('GlobalExceptionFilter (e2e)', () => {
       .expect(404)
       .expect((res) => {
         expect(res.body).toEqual({
-            statusCode: 404,
-            timestamp: expect.any(String),
-            path: '/non-existent-route',
-            message: 'Cannot GET /non-existent-route'
+          statusCode: 404,
+          timestamp: expect.any(String),
+          path: '/non-existent-route',
+          message: 'Cannot GET /non-existent-route',
         });
       });
   });
@@ -63,10 +69,10 @@ describe('GlobalExceptionFilter (e2e)', () => {
       .expect(400)
       .expect((res) => {
         expect(res.body).toEqual({
-            statusCode: 400,
-            timestamp: expect.any(String),
-            path: '/test-exceptions/bad-request',
-            message: 'Validation failed'
+          statusCode: 400,
+          timestamp: expect.any(String),
+          path: '/test-exceptions/bad-request',
+          message: 'Validation failed',
         });
       });
   });
@@ -76,12 +82,14 @@ describe('GlobalExceptionFilter (e2e)', () => {
       .get('/test-exceptions/error')
       .expect(500)
       .expect((res) => {
-        expect(res.body).toEqual(expect.objectContaining({
+        expect(res.body).toEqual(
+          expect.objectContaining({
             statusCode: 500,
             timestamp: expect.any(String),
             path: '/test-exceptions/error',
-            message: 'Internal server error'
-        }));
+            message: 'Internal server error',
+          }),
+        );
       });
   });
 });

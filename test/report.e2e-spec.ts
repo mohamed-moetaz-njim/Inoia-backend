@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, Global, Module } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  Global,
+  Module,
+} from '@nestjs/common';
 import request from 'supertest';
 // import { AppModule } from './../src/app.module'; // Don't import AppModule
 import { ReportModule } from './../src/report/report.module';
@@ -48,7 +53,8 @@ describe('ReportController (e2e)', () => {
     canActivate: (context) => {
       const req = context.switchToHttp().getRequest();
       const user = req.user;
-      if (req.route.path.includes('admin') && user?.role !== 'ADMIN') return false;
+      if (req.route.path.includes('admin') && user?.role !== 'ADMIN')
+        return false;
       return true;
     },
   };
@@ -67,7 +73,9 @@ describe('ReportController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true }),
+    );
     await app.init();
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
   });
@@ -81,7 +89,10 @@ describe('ReportController (e2e)', () => {
     const otherUuid = '123e4567-e89b-12d3-a456-426614174001';
 
     it('should create a report', () => {
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: validUuid, authorId: 'other-id' });
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: validUuid,
+        authorId: 'other-id',
+      });
       mockPrismaService.report.findFirst.mockResolvedValue(null);
       mockPrismaService.report.create.mockResolvedValue({ id: 'report-id' });
 
@@ -97,7 +108,10 @@ describe('ReportController (e2e)', () => {
     });
 
     it('should return 400 for duplicate report', () => {
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: validUuid, authorId: 'other-id' });
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: validUuid,
+        authorId: 'other-id',
+      });
       mockPrismaService.report.findFirst.mockResolvedValue({ id: 'existing' });
 
       return request(app.getHttpServer())
@@ -129,8 +143,14 @@ describe('ReportController (e2e)', () => {
 
   describe('/admin/reports/:id (PATCH)', () => {
     it('should update report status', () => {
-      mockPrismaService.report.findUnique.mockResolvedValue({ id: 'report-id', postId: 'post-id' });
-      mockPrismaService.report.update.mockResolvedValue({ id: 'report-id', status: ReportStatus.RESOLVED });
+      mockPrismaService.report.findUnique.mockResolvedValue({
+        id: 'report-id',
+        postId: 'post-id',
+      });
+      mockPrismaService.report.update.mockResolvedValue({
+        id: 'report-id',
+        status: ReportStatus.RESOLVED,
+      });
 
       return request(app.getHttpServer())
         .patch('/admin/reports/report-id')

@@ -10,9 +10,9 @@ describe('UsersController', () => {
       controllers: [UsersController],
       providers: [
         {
-            provide: UsersService,
-            useValue: {},
-        }
+          provide: UsersService,
+          useValue: {},
+        },
       ],
     }).compile();
 

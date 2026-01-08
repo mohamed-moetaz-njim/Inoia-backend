@@ -1,10 +1,11 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { JwtPayload } from '../../auth/types';
 
 export const GetCurrentUserId = createParamDecorator(
-  (_: undefined, context: ExecutionContext): string => {
+  (_data: undefined, context: ExecutionContext): string => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const request = context.switchToHttp().getRequest();
-    const user = request.user as JwtPayload;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const user = request.user as { sub: string };
     return user.sub;
   },
 );

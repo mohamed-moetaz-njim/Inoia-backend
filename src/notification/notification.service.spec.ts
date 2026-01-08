@@ -41,7 +41,11 @@ describe('NotificationService', () => {
     it('should create a notification', async () => {
       const userId = 'user1';
       const content = 'Test notification';
-      prisma.notification.create.mockResolvedValue({ id: '1', userId, content });
+      prisma.notification.create.mockResolvedValue({
+        id: '1',
+        userId,
+        content,
+      });
 
       const result = await service.createNotification(userId, content);
       expect(result).toEqual({ id: '1', userId, content });
@@ -58,7 +62,10 @@ describe('NotificationService', () => {
       prisma.notification.findMany.mockResolvedValue(notifications);
       prisma.notification.count.mockResolvedValue(1);
 
-      const result = await service.getUserNotifications(userId, { page: 1, limit: 10 });
+      const result = await service.getUserNotifications(userId, {
+        page: 1,
+        limit: 10,
+      });
       expect(result.data).toEqual(notifications);
       expect(result.meta.total).toBe(1);
     });
@@ -81,8 +88,15 @@ describe('NotificationService', () => {
     it('should mark notification as read', async () => {
       const userId = 'user1';
       const notificationId = 'notif1';
-      prisma.notification.findUnique.mockResolvedValue({ id: notificationId, userId });
-      prisma.notification.update.mockResolvedValue({ id: notificationId, userId, readAt: new Date() });
+      prisma.notification.findUnique.mockResolvedValue({
+        id: notificationId,
+        userId,
+      });
+      prisma.notification.update.mockResolvedValue({
+        id: notificationId,
+        userId,
+        readAt: new Date(),
+      });
 
       await service.markAsRead(notificationId, userId);
       expect(prisma.notification.update).toHaveBeenCalled();
@@ -91,9 +105,14 @@ describe('NotificationService', () => {
     it('should throw ForbiddenException if user does not own notification', async () => {
       const userId = 'user1';
       const notificationId = 'notif1';
-      prisma.notification.findUnique.mockResolvedValue({ id: notificationId, userId: 'otherUser' });
+      prisma.notification.findUnique.mockResolvedValue({
+        id: notificationId,
+        userId: 'otherUser',
+      });
 
-      await expect(service.markAsRead(notificationId, userId)).rejects.toThrow(ForbiddenException);
+      await expect(service.markAsRead(notificationId, userId)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

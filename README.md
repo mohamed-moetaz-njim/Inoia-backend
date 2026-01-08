@@ -10,6 +10,7 @@ A secure, scalable, and production-ready backend for a student-focused mental he
 - **Notifications**: Real-time alerts for mentions and comments, with unread counting
 - **Content Reporting & Moderation**: User reports with admin review, resolution, and audit trail
 - **Therapist Verification**: Dedicated workflow for credential review
+- **AI Chat**: Compassionate, safe, and privacy-focused mental health listener powered by Gemini
 - **Safety & Security**: Soft deletes, rate limiting, input validation, Helmet headers
 - **Comprehensive Testing**: End-to-end and high-coverage unit tests
 

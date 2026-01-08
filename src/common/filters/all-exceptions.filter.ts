@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import { Prisma } from '@prisma/client';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -21,23 +22,36 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const ctx = host.switchToHttp();
 
-    const httpStatus =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-
+    let httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
 
     if (exception instanceof HttpException) {
-        const response = exception.getResponse();
-        if (typeof response === 'object' && response !== null && 'message' in response) {
-            message = (response as any).message;
-        } else if (typeof response === 'string') {
-            message = response;
-        }
+      httpStatus = exception.getStatus();
+      const responseBody = exception.getResponse();
+      // console.log('HttpException caught', httpStatus, responseBody);
+
+      const messageObj: any = responseBody;
+
+      message =
+        typeof responseBody === 'object' &&
+        responseBody !== null &&
+        'message' in responseBody
+          ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            messageObj.message
+          : exception.message;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    } else if ((exception as any).code === 'P2002') {
+      httpStatus = HttpStatus.CONFLICT;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const meta: any = (exception as any).meta;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const target = meta?.target;
+      message = `Unique constraint failed on the ${Array.isArray(target) ? target.join(', ') : target}`;
     } else {
-        // Log unknown errors
-        this.logger.error(exception);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const err = exception as any;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      this.logger.error(`Error: ${err.message}`, err.stack);
     }
 
     const responseBody = {
@@ -49,7 +63,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Add stack trace in development
     if (process.env.NODE_ENV === 'development' && exception instanceof Error) {
-        Object.assign(responseBody, { stack: exception.stack });
+      Object.assign(responseBody, { stack: exception.stack });
     }
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);

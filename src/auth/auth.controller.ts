@@ -5,9 +5,6 @@ import {
   HttpStatus,
   Post,
   UseGuards,
-  Get,
-  Query,
-  Param,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
@@ -15,7 +12,6 @@ import { Public, GetCurrentUserId, GetCurrentUser } from '../common/decorators';
 import { RtGuard } from '../common/guards';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
-import { JwtPayloadWithRt } from './types';
 
 @Controller('auth')
 @UseGuards(ThrottlerGuard)
@@ -58,20 +54,24 @@ export class AuthController {
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   verifyEmail(@Body('email') email: string, @Body('token') token: string) {
-      return this.authService.verifyEmail(email, token);
+    return this.authService.verifyEmail(email, token);
   }
 
   @Public()
   @Post('request-reset')
   @HttpCode(HttpStatus.OK)
   requestReset(@Body('email') email: string) {
-      return this.authService.requestPasswordReset(email);
+    return this.authService.requestPasswordReset(email);
   }
 
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  resetPassword(@Body('email') email: string, @Body('token') token: string, @Body('newPassword') newPassword: string) {
-      return this.authService.resetPassword(email, token, newPassword);
+  resetPassword(
+    @Body('email') email: string,
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.authService.resetPassword(email, token, newPassword);
   }
 }

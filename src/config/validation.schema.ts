@@ -11,4 +11,5 @@ export const validationSchema = Joi.object({
   JWT_EXPIRES_IN: Joi.string().default('15m'),
   REFRESH_EXPIRES_IN: Joi.string().default('7d'),
   FRONTEND_URL: Joi.string().optional(),
+  GEMINI_API_KEY: Joi.string().required(),
 });

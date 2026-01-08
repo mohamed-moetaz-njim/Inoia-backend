@@ -64,43 +64,49 @@ describe('UsersService', () => {
     });
 
     it('should generate a username if not provided', async () => {
-        const dtoWithoutUsername = { ...createUserDto };
-        delete dtoWithoutUsername.username;
-        
-        prisma.user.findUnique.mockResolvedValue(null); // Username available
-        prisma.user.create.mockImplementation((args) => Promise.resolve(args.data));
+      const dtoWithoutUsername = { ...createUserDto };
+      delete dtoWithoutUsername.username;
 
-        const result = await service.create(dtoWithoutUsername);
+      prisma.user.findUnique.mockResolvedValue(null); // Username available
+      prisma.user.create.mockImplementation((args) =>
+        Promise.resolve(args.data),
+      );
 
-        expect(prisma.user.findUnique).toHaveBeenCalled();
-        expect(result.username).toBe('mocked-pseudonym');
+      const result = await service.create(dtoWithoutUsername);
+
+      expect(prisma.user.findUnique).toHaveBeenCalled();
+      expect(result.username).toBe('mocked-pseudonym');
     });
 
     it('should retry generating username if taken', async () => {
-        const dtoWithoutUsername = { ...createUserDto };
-        delete dtoWithoutUsername.username;
+      const dtoWithoutUsername = { ...createUserDto };
+      delete dtoWithoutUsername.username;
 
-        // First attempt collides, second succeeds
-        prisma.user.findUnique
-            .mockResolvedValueOnce({ id: 'existing' } as any)
-            .mockResolvedValueOnce(null);
-            
-        prisma.user.create.mockImplementation((args) => Promise.resolve(args.data));
+      // First attempt collides, second succeeds
+      prisma.user.findUnique
+        .mockResolvedValueOnce({ id: 'existing' } as any)
+        .mockResolvedValueOnce(null);
 
-        await service.create(dtoWithoutUsername);
+      prisma.user.create.mockImplementation((args) =>
+        Promise.resolve(args.data),
+      );
 
-        expect(prisma.user.findUnique).toHaveBeenCalledTimes(2);
+      await service.create(dtoWithoutUsername);
+
+      expect(prisma.user.findUnique).toHaveBeenCalledTimes(2);
     });
 
     it('should throw ConflictException if username generation fails after retries', async () => {
-        const dtoWithoutUsername = { ...createUserDto };
-        delete dtoWithoutUsername.username;
+      const dtoWithoutUsername = { ...createUserDto };
+      delete dtoWithoutUsername.username;
 
-        // Always collides
-        prisma.user.findUnique.mockResolvedValue({ id: 'existing' } as any);
+      // Always collides
+      prisma.user.findUnique.mockResolvedValue({ id: 'existing' } as any);
 
-        await expect(service.create(dtoWithoutUsername)).rejects.toThrow(ConflictException);
-        expect(prisma.user.findUnique).toHaveBeenCalledTimes(5);
+      await expect(service.create(dtoWithoutUsername)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(prisma.user.findUnique).toHaveBeenCalledTimes(5);
     });
   });
 
@@ -146,7 +152,10 @@ describe('UsersService', () => {
   describe('remove', () => {
     it('should soft delete a user', async () => {
       const userId = '1';
-      prisma.user.update.mockResolvedValue({ id: userId, deletedAt: new Date() });
+      prisma.user.update.mockResolvedValue({
+        id: userId,
+        deletedAt: new Date(),
+      });
 
       await service.remove(userId);
 

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Param } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { GetCurrentUserId, Roles } from '../common/decorators';
 import { Role } from '@prisma/client';
@@ -18,10 +18,7 @@ export class AdminController {
   }
 
   @Post('users/:id/unban')
-  unbanUser(
-    @Param('id') id: string,
-    @GetCurrentUserId() adminId: string,
-  ) {
+  unbanUser(@Param('id') id: string, @GetCurrentUserId() adminId: string) {
     return this.adminService.unbanUser(adminId, id);
   }
 }

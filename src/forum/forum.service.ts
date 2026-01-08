@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCommentDto, CreatePostDto, PaginationQueryDto, UpdatePostDto } from './dto/forum.dto';
+import {
+  CreateCommentDto,
+  CreatePostDto,
+  PaginationQueryDto,
+  UpdatePostDto,
+} from './dto/forum.dto';
 import { ensureOwnership } from '../common/utils/authorization.utils';
 import { Role } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
@@ -34,9 +39,13 @@ export class ForumService {
     return {
       username: author.username,
       role: author.role,
-      therapistProfile: isTherapist && author.therapistVerification ? {
-        certificationReference: author.therapistVerification.certificationReference,
-      } : undefined,
+      therapistProfile:
+        isTherapist && author.therapistVerification
+          ? {
+              certificationReference:
+                author.therapistVerification.certificationReference,
+            }
+          : undefined,
     };
   }
 
@@ -77,20 +86,40 @@ export class ForumService {
     ]);
 
     return {
-      data: posts.map(post => {
-        const { author, votes, ...postData } = post;
-        // Clean up internal author fields
-        const { id, deletedAt, therapistVerification, ...restAuthor } = author;
-        
-        const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
-        const userVote = currentUserId ? (votes.find(v => v.userId === currentUserId)?.value || 0) : 0;
+      data: posts.map((post) => {
+        // Type assertion to help TS understand the structure returned by include
+        const author = post.author as unknown as {
+          username: string;
+          role: Role;
+          therapistVerification: { certificationReference: string } | null;
+        };
 
-        return {
-          ...postData,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { author: _, votes, ...restPost } = post;
+        const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
+        const userVote = currentUserId
+          ? votes.find((v) => v.userId === currentUserId)?.value || 0
+          : 0;
+
+        const result: any = {
+          ...restPost,
           voteCount,
           userVote,
-          author: this.mapAuthor(author),
+          author: {
+            username: author.username,
+            role: author.role,
+          },
         };
+
+        if (author.role === Role.THERAPIST && author.therapistVerification) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          result.author.therapistProfile = {
+            certificationReference:
+              author.therapistVerification.certificationReference,
+          };
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return result;
       }),
       meta: {
         total,
@@ -125,10 +154,11 @@ export class ForumService {
     }
 
     const { author, votes, ...postData } = post;
-    const { id: authorId, deletedAt, therapistVerification, ...restAuthor } = author;
 
     const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
-    const userVote = currentUserId ? (votes.find(v => v.userId === currentUserId)?.value || 0) : 0;
+    const userVote = currentUserId
+      ? votes.find((v) => v.userId === currentUserId)?.value || 0
+      : 0;
 
     return {
       ...postData,
@@ -138,7 +168,11 @@ export class ForumService {
     };
   }
 
-  async findComments(postId: string, query: PaginationQueryDto, currentUserId?: string) {
+  async findComments(
+    postId: string,
+    query: PaginationQueryDto,
+    currentUserId?: string,
+  ) {
     await this.findOnePost(postId, currentUserId);
 
     const { page = 1, limit = 10 } = query;
@@ -147,12 +181,12 @@ export class ForumService {
     const [comments, total] = await Promise.all([
       this.prisma.comment.findMany({
         where: {
-            postId,
-            author: { deletedAt: null },
-            OR: [
-                { deletedAt: null },
-                { authorId: currentUserId ?? 'no_match_id' }
-            ]
+          postId,
+          author: { deletedAt: null },
+          OR: [
+            { deletedAt: null },
+            { authorId: currentUserId ?? 'no_match_id' },
+          ],
         },
         include: {
           author: {
@@ -170,23 +204,24 @@ export class ForumService {
       }),
       this.prisma.comment.count({
         where: {
-            postId,
-            author: { deletedAt: null },
-            OR: [
-                { deletedAt: null },
-                { authorId: currentUserId ?? 'no_match_id' }
-            ]
+          postId,
+          author: { deletedAt: null },
+          OR: [
+            { deletedAt: null },
+            { authorId: currentUserId ?? 'no_match_id' },
+          ],
         },
       }),
     ]);
 
     return {
-      data: comments.map(comment => {
+      data: comments.map((comment) => {
         const { author, votes, ...commentData } = comment;
-        const { id, deletedAt, therapistVerification, ...restAuthor } = author;
 
         const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
-        const userVote = currentUserId ? (votes.find(v => v.userId === currentUserId)?.value || 0) : 0;
+        const userVote = currentUserId
+          ? votes.find((v) => v.userId === currentUserId)?.value || 0
+          : 0;
 
         return {
           ...commentData,
@@ -215,22 +250,22 @@ export class ForumService {
       },
       include: {
         author: {
-            select: this.getAuthorSelect(),
+          select: this.getAuthorSelect(),
         },
       },
     });
-    
+
     const { author, ...postData } = post;
     return {
-        ...postData,
-        author: this.mapAuthor(author),
+      ...postData,
+      author: this.mapAuthor(author),
     };
   }
 
   async updatePost(userId: string, postId: string, dto: UpdatePostDto) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException('Post not found');
-    
+
     // Check if deleted
     if (post.deletedAt) throw new NotFoundException('Post not found'); // Cannot edit deleted posts
 
@@ -243,15 +278,15 @@ export class ForumService {
       },
       include: {
         author: {
-            select: this.getAuthorSelect(),
+          select: this.getAuthorSelect(),
         },
       },
     });
-    
+
     const { author, ...postData } = updated;
     return {
-        ...postData,
-        author: this.mapAuthor(author),
+      ...postData,
+      author: this.mapAuthor(author),
     };
   }
 
@@ -281,7 +316,7 @@ export class ForumService {
       },
       include: {
         author: {
-            select: this.getAuthorSelect(),
+          select: this.getAuthorSelect(),
         },
       },
     });
@@ -301,29 +336,31 @@ export class ForumService {
     const mentions = dto.content.match(/@([a-zA-Z0-9_]+)/g);
     if (mentions) {
       const uniqueMentions = [...new Set(mentions)]; // Remove duplicates
-      
+
       for (const mention of uniqueMentions) {
         const username = mention.substring(1); // Remove @
-        
+
         // Skip self-mention (though unlikely to find self by username if not checked, but good to be safe)
         // Also skip if the mentioned user is the one commenting (handled by user.id !== userId check below)
-        
+
         const user = await this.usersService.findOne({ username });
         if (user && user.id !== userId) {
-           const content = `@${commentAuthorUsername} mentioned you in a comment`;
-           await this.notificationService.createNotification(user.id, content);
+          const content = `@${commentAuthorUsername} mentioned you in a comment`;
+          await this.notificationService.createNotification(user.id, content);
         }
       }
     }
 
     return {
-        ...commentData,
-        author: this.mapAuthor(author),
+      ...commentData,
+      author: this.mapAuthor(author),
     };
   }
 
   async deleteComment(userId: string, commentId: string) {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
     if (!comment) throw new NotFoundException('Comment not found');
     if (comment.deletedAt) throw new NotFoundException('Comment not found');
 

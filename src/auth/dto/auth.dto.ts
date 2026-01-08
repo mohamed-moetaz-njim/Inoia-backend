@@ -22,7 +22,7 @@ export class LoginDto {
 }
 
 export class RefreshTokenDto {
-    @IsString()
-    @IsNotEmpty()
-    refreshToken!: string;
+  @IsString()
+  @IsNotEmpty()
+  refreshToken!: string;
 }

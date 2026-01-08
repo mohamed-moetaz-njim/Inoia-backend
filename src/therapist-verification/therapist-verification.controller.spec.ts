@@ -16,7 +16,9 @@ describe('TherapistVerificationController', () => {
       ],
     }).compile();
 
-    controller = module.get<TherapistVerificationController>(TherapistVerificationController);
+    controller = module.get<TherapistVerificationController>(
+      TherapistVerificationController,
+    );
   });
 
   it('should be defined', () => {

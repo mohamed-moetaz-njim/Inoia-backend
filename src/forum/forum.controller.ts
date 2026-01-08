@@ -1,6 +1,21 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ForumService } from './forum.service';
-import { CreateCommentDto, CreatePostDto, PaginationQueryDto, UpdatePostDto } from './dto/forum.dto';
+import {
+  CreateCommentDto,
+  CreatePostDto,
+  PaginationQueryDto,
+  UpdatePostDto,
+} from './dto/forum.dto';
 import { GetCurrentUser, GetCurrentUserId, Public } from '../common/decorators';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { AtGuard } from '../common/guards';

@@ -25,8 +25,9 @@ async function bootstrap() {
 
   // Global Exception Filter
   const httpAdapter = app.get(HttpAdapterHost);
+
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap();

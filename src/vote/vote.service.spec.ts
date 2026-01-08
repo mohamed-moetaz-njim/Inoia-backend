@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { VoteService } from './vote.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 
 const mockPrismaService = {
   post: {
@@ -47,25 +51,39 @@ describe('VoteService', () => {
 
   describe('vote', () => {
     it('should throw BadRequestException if both postId and commentId are missing', async () => {
-      await expect(service.vote('user1', { value: 1 } as any)).rejects.toThrow(BadRequestException);
+      await expect(service.vote('user1', { value: 1 } as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException if both postId and commentId are provided', async () => {
-      await expect(service.vote('user1', { postId: '1', commentId: '1', value: 1 })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.vote('user1', { postId: '1', commentId: '1', value: 1 }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException if post not found', async () => {
       mockPrismaService.post.findUnique.mockResolvedValue(null);
-      await expect(service.vote('user1', { postId: '1', value: 1 })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.vote('user1', { postId: '1', value: 1 }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if user votes on own post', async () => {
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: '1', authorId: 'user1' });
-      await expect(service.vote('user1', { postId: '1', value: 1 })).rejects.toThrow(ForbiddenException);
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: '1',
+        authorId: 'user1',
+      });
+      await expect(
+        service.vote('user1', { postId: '1', value: 1 }),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should create a new vote if none exists', async () => {
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: '1', authorId: 'other' });
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: '1',
+        authorId: 'other',
+      });
       mockPrismaService.vote.findFirst.mockResolvedValue(null);
       mockPrismaService.vote.create.mockResolvedValue({ value: 1 });
 
@@ -75,17 +93,29 @@ describe('VoteService', () => {
     });
 
     it('should toggle vote off if same value exists', async () => {
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: '1', authorId: 'other' });
-      mockPrismaService.vote.findFirst.mockResolvedValue({ id: 'v1', value: 1 });
-      
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: '1',
+        authorId: 'other',
+      });
+      mockPrismaService.vote.findFirst.mockResolvedValue({
+        id: 'v1',
+        value: 1,
+      });
+
       const result = await service.vote('user1', { postId: '1', value: 1 });
       expect(result).toEqual({ status: 'unvoted', value: 0 });
       expect(mockPrismaService.vote.delete).toHaveBeenCalled();
     });
 
     it('should update vote if different value exists', async () => {
-      mockPrismaService.post.findUnique.mockResolvedValue({ id: '1', authorId: 'other' });
-      mockPrismaService.vote.findFirst.mockResolvedValue({ id: 'v1', value: 1 });
+      mockPrismaService.post.findUnique.mockResolvedValue({
+        id: '1',
+        authorId: 'other',
+      });
+      mockPrismaService.vote.findFirst.mockResolvedValue({
+        id: 'v1',
+        value: 1,
+      });
       mockPrismaService.vote.update.mockResolvedValue({ value: -1 });
 
       const result = await service.vote('user1', { postId: '1', value: -1 });

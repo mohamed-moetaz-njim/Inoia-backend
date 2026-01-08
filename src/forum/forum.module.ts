@@ -6,11 +6,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    NotificationModule,
-    UsersModule,
-  ],
+  imports: [PrismaModule, NotificationModule, UsersModule],
   controllers: [ForumController],
   providers: [ForumService],
 })
