@@ -12,4 +12,6 @@ export const validationSchema = Joi.object({
   REFRESH_EXPIRES_IN: Joi.string().default('7d'),
   FRONTEND_URL: Joi.string().optional(),
   GEMINI_API_KEY: Joi.string().required(),
+  RESEND_API_KEY: Joi.string().required(),
+  FROM_EMAIL: Joi.string().required(),
 });

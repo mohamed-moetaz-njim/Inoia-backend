@@ -78,6 +78,7 @@ describe('AuthService', () => {
     it('should create a user if email is not taken', async () => {
       mockUsersService.isEmailTaken.mockResolvedValue(false);
       mockUsersService.create.mockResolvedValue({ id: '1', email: dto.email });
+      mockEmailService.sendVerificationEmail.mockResolvedValue({ id: 'email_id' });
 
       const result = await service.signup(dto);
 
@@ -94,6 +95,11 @@ describe('AuthService', () => {
         where: { id: '1' },
         data: { verificationToken: 'hashed-value' },
       });
+      // Email sent
+      expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(
+        dto.email,
+        'mock-uuid',
+      );
       expect(result).toHaveProperty('userId', '1');
     });
 

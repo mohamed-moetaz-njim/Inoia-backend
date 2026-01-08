@@ -12,6 +12,7 @@ import * as argon2 from 'argon2';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { Role } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private emailService: EmailService,
   ) {}
 
   async signup(dto: RegisterDto) {
@@ -44,13 +46,12 @@ export class AuthService {
       data: { verificationToken: hashedVerificationToken },
     });
 
-    // In a real app, send email here.
-    // For this exercise, we'll log it or return it?
-    // Returning it in response for testing purposes since we don't have email service.
+    // Send verification email
+    await this.emailService.sendVerificationEmail(dto.email, verificationToken);
+
     return {
-      message: 'User registered. Please verify email.',
+      message: 'User registered. Please check your email to verify your account.',
       userId: user.id,
-      // verificationToken, // REMOVED: Do not expose token in response. TODO: Send via email.
     };
   }
 

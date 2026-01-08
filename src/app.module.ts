@@ -16,6 +16,7 @@ import { ReportModule } from './report/report.module';
 import { NotificationModule } from './notification/notification.module';
 import { VoteModule } from './vote/vote.module';
 import { AiChatModule } from './ai-chat/ai-chat.module';
+import { EmailModule } from './email/email.module';
 import { validationSchema } from './config/validation.schema';
 
 @Module({
@@ -33,6 +34,7 @@ import { validationSchema } from './config/validation.schema';
     PrismaModule,
     UsersModule,
     AuthModule,
+    EmailModule,
     CommonModule,
     AdminModule,
     TherapistVerificationModule,
