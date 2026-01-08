@@ -50,7 +50,7 @@ export class AuthService {
     return {
       message: 'User registered. Please verify email.',
       userId: user.id,
-      verificationToken, // TODO: Remove in production, send via email instead
+      // verificationToken, // REMOVED: Do not expose token in response. TODO: Send via email.
     };
   }
 
