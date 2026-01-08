@@ -41,7 +41,7 @@ Always prioritize safety and well-being`;
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
+      model: 'gemini-1.5-flash',
     });
   }
 

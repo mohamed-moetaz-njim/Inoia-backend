@@ -11,12 +11,23 @@ import {
 import { UsersService } from './users.service';
 import { GetCurrentUserId } from '../common/decorators';
 import { generatePseudonym } from '../common/utils';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('Users')
+@ApiBearerAuth('JWT-auth')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Return user profile.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
   async getMe(@GetCurrentUserId() userId: string) {
     const user = await this.usersService.findOne({ id: userId });
     if (!user) throw new NotFoundException('User not found');
@@ -24,6 +35,9 @@ export class UsersController {
   }
 
   @Post('reroll-username')
+  @ApiOperation({ summary: 'Reroll username (if not locked)' })
+  @ApiResponse({ status: 201, description: 'Username rerolled.' })
+  @ApiResponse({ status: 403, description: 'Username is locked.' })
   async rerollUsername(@GetCurrentUserId() userId: string) {
     const user = await this.usersService.findOne({ id: userId });
     if (!user) throw new NotFoundException('User not found');
@@ -51,6 +65,8 @@ export class UsersController {
   }
 
   @Post('lock-username')
+  @ApiOperation({ summary: 'Lock username' })
+  @ApiResponse({ status: 201, description: 'Username locked.' })
   async lockUsername(@GetCurrentUserId() userId: string) {
     return this.usersService.update({
       where: { id: userId },
@@ -60,6 +76,8 @@ export class UsersController {
 
   @Delete('me')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete account' })
+  @ApiResponse({ status: 204, description: 'Account deleted.' })
   async deleteAccount(@GetCurrentUserId() userId: string) {
     await this.usersService.remove(userId);
   }

@@ -9,14 +9,17 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Role } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PaginationQueryDto {
+  @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number = 1;
 
+  @ApiPropertyOptional({ default: 10, minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -25,12 +28,24 @@ export class PaginationQueryDto {
 }
 
 export class CreatePostDto {
+  @ApiProperty({
+    example: 'How do I deal with exam stress?',
+    description: 'Post title',
+    minLength: 5,
+    maxLength: 100,
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
   @MaxLength(100)
   title: string;
 
+  @ApiProperty({
+    example: 'I have been feeling really overwhelmed lately...',
+    description: 'Post content',
+    minLength: 10,
+    maxLength: 5000,
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(10)
@@ -39,6 +54,12 @@ export class CreatePostDto {
 }
 
 export class UpdatePostDto {
+  @ApiProperty({
+    example: 'Updated content...',
+    description: 'Post content',
+    minLength: 10,
+    maxLength: 5000,
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(10)
@@ -47,6 +68,12 @@ export class UpdatePostDto {
 }
 
 export class CreateCommentDto {
+  @ApiProperty({
+    example: 'Try deep breathing exercises.',
+    description: 'Comment content',
+    minLength: 1,
+    maxLength: 1000,
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(1)
@@ -55,9 +82,14 @@ export class CreateCommentDto {
 }
 
 export class AuthorDto {
+  @ApiProperty()
   username: string;
+
+  @ApiProperty({ enum: Role })
   role: Role;
+
   // Optional Therapist Profile
+  @ApiPropertyOptional()
   therapistProfile?: {
     certificationReference?: string;
     // Add other public fields here if Schema had them (e.g. workplace, bio)
@@ -69,18 +101,38 @@ export class AuthorDto {
 }
 
 export class PostResponseDto {
+  @ApiProperty()
   id: string;
+
+  @ApiProperty()
   title: string;
+
+  @ApiProperty()
   content: string;
+
+  @ApiProperty()
   createdAt: Date;
+
+  @ApiProperty()
   updatedAt: Date;
+
+  @ApiProperty()
   author: AuthorDto;
 }
 
 export class CommentResponseDto {
+  @ApiProperty()
   id: string;
+
+  @ApiProperty()
   content: string;
+
+  @ApiProperty()
   createdAt: Date;
+
+  @ApiProperty()
   updatedAt: Date;
+
+  @ApiProperty()
   author: AuthorDto;
 }

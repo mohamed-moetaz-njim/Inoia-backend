@@ -45,6 +45,17 @@ A secure, scalable, and production-ready backend for a student-focused mental he
    npm run start:dev
    ```
 
+## API Documentation
+
+The backend features fully interactive Swagger/OpenAPI documentation.
+
+- **Local Development**: [http://localhost:3000/api](http://localhost:3000/api)
+- **Features**:
+  - Explore all endpoints (Auth, Forum, Votes, Notifications, AI Chat, etc.)
+  - Test requests directly from the browser
+  - View request/response schemas and examples
+  - Authorize with JWT token
+
 ## Testing
 
 ```bash

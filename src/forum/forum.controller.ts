@@ -21,7 +21,14 @@ import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { AtGuard } from '../common/guards';
 import { JwtPayload } from '../auth/types';
 import { Throttle } from '@nestjs/throttler';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('Forum')
 @Controller('forum')
 @UseGuards(OptionalAuthGuard)
 export class ForumController {
@@ -29,6 +36,8 @@ export class ForumController {
 
   @Public()
   @Get('posts')
+  @ApiOperation({ summary: 'Get all posts' })
+  @ApiResponse({ status: 200, description: 'Return all posts.' })
   async findAll(
     @Query() query: PaginationQueryDto,
     @GetCurrentUser() user: JwtPayload | undefined,
@@ -38,6 +47,9 @@ export class ForumController {
 
   @Public()
   @Get('posts/:id')
+  @ApiOperation({ summary: 'Get post by id' })
+  @ApiResponse({ status: 200, description: 'Return the post.' })
+  @ApiResponse({ status: 404, description: 'Post not found.' })
   async findOne(
     @Param('id') id: string,
     @GetCurrentUser() user: JwtPayload | undefined,
@@ -47,6 +59,8 @@ export class ForumController {
 
   @Public()
   @Get('posts/:id/comments')
+  @ApiOperation({ summary: 'Get comments for a post' })
+  @ApiResponse({ status: 200, description: 'Return comments.' })
   async findComments(
     @Param('id') id: string,
     @Query() query: PaginationQueryDto,
@@ -59,7 +73,10 @@ export class ForumController {
 
   @Post('posts')
   @UseGuards(AtGuard)
+  @ApiBearerAuth('JWT-auth')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 posts per minute
+  @ApiOperation({ summary: 'Create a new post' })
+  @ApiResponse({ status: 201, description: 'Post successfully created.' })
   async createPost(
     @GetCurrentUserId() userId: string,
     @Body() dto: CreatePostDto,
@@ -69,6 +86,9 @@ export class ForumController {
 
   @Patch('posts/:id')
   @UseGuards(AtGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update a post' })
+  @ApiResponse({ status: 200, description: 'Post successfully updated.' })
   async updatePost(
     @Param('id') id: string,
     @GetCurrentUserId() userId: string,
@@ -79,6 +99,9 @@ export class ForumController {
 
   @Delete('posts/:id')
   @UseGuards(AtGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete a post' })
+  @ApiResponse({ status: 200, description: 'Post successfully deleted.' })
   async deletePost(
     @Param('id') id: string,
     @GetCurrentUserId() userId: string,
@@ -88,7 +111,10 @@ export class ForumController {
 
   @Post('posts/:id/comments')
   @UseGuards(AtGuard)
+  @ApiBearerAuth('JWT-auth')
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 comments per minute
+  @ApiOperation({ summary: 'Add a comment to a post' })
+  @ApiResponse({ status: 201, description: 'Comment successfully created.' })
   async createComment(
     @Param('id') id: string,
     @GetCurrentUserId() userId: string,
@@ -99,6 +125,9 @@ export class ForumController {
 
   @Delete('comments/:id')
   @UseGuards(AtGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete a comment' })
+  @ApiResponse({ status: 200, description: 'Comment successfully deleted.' })
   async deleteComment(
     @Param('id') id: string,
     @GetCurrentUserId() userId: string,
