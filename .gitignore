@@ -21,3 +21,7 @@ npm-debug.log*
 
 # Prisma local dev
 prisma/dev.db
+
+# Local Documentation
+AUDIT_REPORT.md
+PROJECT_RULES.md
