@@ -115,6 +115,11 @@ Always prioritize safety and well-being`;
       },
     });
 
+    // Generate title if this is the first message
+    if (conversation.messages.length === 0) {
+      await this.generateConversationTitle(conversationId, content);
+    }
+
     // Update conversation last activity
     await this.prisma.aiConversation.update({
       where: { id: conversationId },
@@ -170,6 +175,33 @@ Always prioritize safety and well-being`;
       aiMessage,
       analysis, // Optional: return analysis for debugging/client usage if needed
     };
+  }
+
+  private async generateConversationTitle(
+    conversationId: string,
+    firstMessage: string,
+  ) {
+    try {
+      const prompt = `Summarize this message into a short conversation title (3-8 words, natural and empathetic): '${firstMessage}'`;
+      const result = await this.model.generateContent(prompt);
+      const title = result.response
+        .text()
+        .trim()
+        .replace(/^["']|["']$/g, ''); // Clean quotes
+
+      await this.prisma.aiConversation.update({
+        where: { id: conversationId },
+        data: { title },
+      });
+    } catch (error) {
+      this.logger.error('Title generation failed', error);
+      const fallbackTitle =
+        firstMessage.substring(0, 30) + (firstMessage.length > 30 ? '...' : '');
+      await this.prisma.aiConversation.update({
+        where: { id: conversationId },
+        data: { title: fallbackTitle },
+      });
+    }
   }
 
   private async analyzeMessage(

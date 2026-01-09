@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -25,6 +26,10 @@ const mockUsersService = {
   findOne: jest.fn(),
 };
 
+const mockEmailService = {
+  sendVerificationEmail: jest.fn(),
+};
+
 const mockJwtService = {
   signAsync: jest.fn(),
 };
@@ -43,6 +48,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: UsersService, useValue: mockUsersService },
+        { provide: EmailService, useValue: mockEmailService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
       ],
@@ -71,14 +77,16 @@ describe('AuthService', () => {
 
   describe('signup', () => {
     const dto = {
-      email: 'test@example.com',
+      email: 'yamiigraphics@gmail.com',
       password: 'password123',
     };
 
     it('should create a user if email is not taken', async () => {
       mockUsersService.isEmailTaken.mockResolvedValue(false);
       mockUsersService.create.mockResolvedValue({ id: '1', email: dto.email });
-      mockEmailService.sendVerificationEmail.mockResolvedValue({ id: 'email_id' });
+      mockEmailService.sendVerificationEmail.mockResolvedValue({
+        id: 'email_id',
+      });
 
       const result = await service.signup(dto);
 
@@ -111,7 +119,7 @@ describe('AuthService', () => {
 
   describe('signin', () => {
     const dto = {
-      email: 'test@example.com',
+      email: 'yamiigraphics@gmail.com',
       password: 'password123',
     };
     const user = {
@@ -223,7 +231,7 @@ describe('AuthService', () => {
       mockUsersService.findOne.mockResolvedValue(user);
       (argon2.verify as jest.Mock).mockResolvedValue(true);
 
-      await service.verifyEmail('test@test.com', 'token');
+      await service.verifyEmail('yamiigraphics@gmail.com', 'token');
 
       expect(mockUsersService.update).toHaveBeenCalledWith({
         where: { id: '1' },
@@ -250,7 +258,7 @@ describe('AuthService', () => {
   describe('passwordReset', () => {
     it('requestPasswordReset should set resetToken', async () => {
       mockUsersService.findOne.mockResolvedValue({ id: '1' });
-      await service.requestPasswordReset('test@test.com');
+      await service.requestPasswordReset('yamiigraphics@gmail.com');
       expect(mockUsersService.update).toHaveBeenCalledWith({
         where: { id: '1' },
         data: { resetToken: 'hashed-value' },
@@ -283,7 +291,9 @@ describe('AuthService', () => {
         id: '1',
         verificationToken: 'old-token',
       });
-      mockEmailService.sendVerificationEmail.mockResolvedValue({ id: 'email_id' });
+      mockEmailService.sendVerificationEmail.mockResolvedValue({
+        id: 'email_id',
+      });
 
       await service.resendVerificationEmail('test@example.com');
 
@@ -313,7 +323,9 @@ describe('AuthService', () => {
         verificationToken: null,
       });
 
-      const result = await service.resendVerificationEmail('test@example.com');
+      const result = await service.resendVerificationEmail(
+        'yamiigraphics@gmail.com',
+      );
 
       expect(mockUsersService.update).not.toHaveBeenCalled();
       expect(mockEmailService.sendVerificationEmail).not.toHaveBeenCalled();

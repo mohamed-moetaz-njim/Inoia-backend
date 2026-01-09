@@ -97,6 +97,13 @@ describe('AI Chat (e2e)', () => {
     });
 
     it('should send a message and get an AI response', async () => {
+      // Mock Title Generation
+      mockGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () => 'Test Conversation Title',
+        },
+      });
+
       // Mock Analysis
       mockGenerateContent.mockResolvedValueOnce({
         response: {
@@ -126,9 +133,22 @@ describe('AI Chat (e2e)', () => {
       expect(res.body.userMessage.content).toBe('Hello AI');
       expect(res.body.aiMessage.content).toBe('Hello, I am here to help.');
       expect(res.body.aiMessage.sender).toBe(AiSender.AI);
+
+      // Verify Title
+      const updatedConv = await prisma.aiConversation.findUnique({
+        where: { id: conversationId },
+      });
+      expect(updatedConv.title).toBe('Test Conversation Title');
     });
 
     it('should handle high risk messages with safety fallback', async () => {
+      // Mock Title Generation
+      mockGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () => 'Crisis Title',
+        },
+      });
+
       // Mock Analysis (High Risk)
       mockGenerateContent.mockResolvedValueOnce({
         response: {
@@ -157,7 +177,7 @@ describe('AI Chat (e2e)', () => {
   describe('GET /ai-chat/conversations', () => {
     it('should return list of conversations', async () => {
       await prisma.aiConversation.create({
-        data: { userId, lastActivityAt: new Date() },
+        data: { userId, lastActivityAt: new Date(), title: 'My Title' },
       });
 
       const res = await request(app.getHttpServer())
@@ -166,6 +186,7 @@ describe('AI Chat (e2e)', () => {
         .expect(200);
 
       expect(res.body.length).toBeGreaterThan(0);
+      expect(res.body[0].title).toBe('My Title');
     });
   });
 });

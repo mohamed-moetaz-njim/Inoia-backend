@@ -143,6 +143,7 @@ model Report {
 model AiConversation {
   id              String   @id @default(uuid())
   userId          String
+  title           String?
   lastActivityAt  DateTime
   createdAt       DateTime @default(now())
 

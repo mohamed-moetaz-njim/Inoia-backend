@@ -10,7 +10,9 @@ describe('Email Verification (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   const emailServiceMock = {
-    sendVerificationEmail: jest.fn().mockResolvedValue({ data: { id: 'mock-id' }, error: null }),
+    sendVerificationEmail: jest
+      .fn()
+      .mockResolvedValue({ data: { id: 'mock-id' }, error: null }),
   };
 
   beforeAll(async () => {
@@ -31,7 +33,9 @@ describe('Email Verification (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: 'verify-test@example.com' } });
+    await prisma.user.deleteMany({
+      where: { email: 'yamiigraphics@gmail.com' },
+    });
     await app.close();
   });
 
@@ -40,7 +44,7 @@ describe('Email Verification (e2e)', () => {
   });
 
   it('should send email on signup and verify successfully', async () => {
-    const email = 'verify-test@example.com';
+    const email = 'yamiigraphics@gmail.com';
     const password = 'Password123!';
 
     // Ensure user doesn't exist
@@ -63,7 +67,7 @@ describe('Email Verification (e2e)', () => {
     );
 
     // Get the token from the mock call
-    // Note: If multiple tests run, make sure to get the right call. 
+    // Note: If multiple tests run, make sure to get the right call.
     // Since we clear mocks in beforeEach, calls[0] should be this test's call.
     const token = emailServiceMock.sendVerificationEmail.mock.calls[0][1];
 
@@ -106,27 +110,27 @@ describe('Email Verification (e2e)', () => {
       .expect(200);
 
     // Check if email service was called TWICE (signup + resend)
-    // Note: Depends on if mocks persist across tests or cleared. 
+    // Note: Depends on if mocks persist across tests or cleared.
     // We clear mocks in beforeEach, so it should be called once FOR THIS TEST's resend if we look carefully.
     // Actually, signup called it once. Resend called it again.
     // Since we didn't clear mocks BETWEEN steps in this test, count should be 2.
     expect(emailServiceMock.sendVerificationEmail).toHaveBeenCalledTimes(2);
-    
+
     // 3. Verify with the NEW token
     const newToken = emailServiceMock.sendVerificationEmail.mock.calls[1][1]; // 2nd call
-    
+
     await request(app.getHttpServer())
       .post('/auth/verify-email')
       .send({ email, token: newToken })
       .expect(200);
-      
+
     // Cleanup
     await prisma.user.deleteMany({ where: { email } });
   });
 
   it('should allow resending verification email with mixed case email', async () => {
-    const email = 'MixedCase@example.com';
-    const emailLower = 'mixedcase@example.com';
+    const email = 'Yamiigraphics@gmail.com';
+    const emailLower = 'yamiigraphics@gmail.com';
     const password = 'Password123!';
 
     // Ensure user doesn't exist
@@ -150,19 +154,21 @@ describe('Email Verification (e2e)', () => {
     // And if resend works, called again.
     // BUT since we run tests in parallel/sequence, call count is tricky.
     // We can check if the LAST call was to our email.
-    
+
     // Actually, if we haven't fixed the bug, this test might pass the expect(200) but NOT call the email service for the second time.
     // So we need to be strict about call counts or args.
-    
+
     // Let's rely on the fact that if it fails, it returns 200 but doesn't send email.
     // We need to inspect the mock.
     const calls = emailServiceMock.sendVerificationEmail.mock.calls;
     // Filter calls for this email
-    const callsForThisUser = calls.filter(c => c[0].toLowerCase() === emailLower.toLowerCase());
-    
+    const callsForThisUser = calls.filter(
+      (c) => c[0].toLowerCase() === emailLower.toLowerCase(),
+    );
+
     // Expect 2 calls: 1 for signup, 1 for resend
     expect(callsForThisUser.length).toBe(2);
-    
+
     // Cleanup
     await prisma.user.deleteMany({ where: { email: emailLower } });
     await prisma.user.deleteMany({ where: { email: email } });
@@ -173,7 +179,7 @@ describe('Email Verification (e2e)', () => {
   //    // In E2E, it usually is.
   //    // Limit is 3 per 10 mins.
   //    const email = 'spam@example.com';
-     
+
   //    const reqs = [];
   //    for(let i=0; i<5; i++) {
   //       reqs.push(
@@ -182,7 +188,7 @@ describe('Email Verification (e2e)', () => {
   //           .send({ email })
   //       );
   //    }
-     
+
   //    const responses = await Promise.all(reqs);
   //    const tooMany = responses.filter(r => r.status === 429);
   //    expect(tooMany.length).toBeGreaterThan(0);

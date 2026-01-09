@@ -80,6 +80,13 @@ describe('AiChatService', () => {
           sender: AiSender.AI,
         }); // AI message
 
+      // Mock Title Generation
+      mockGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () => 'Conversation Title',
+        },
+      });
+
       // Mock Gemini analysis response
       mockGenerateContent.mockResolvedValueOnce({
         response: {
@@ -109,7 +116,7 @@ describe('AiChatService', () => {
       expect(result.userMessage.content).toBe(content);
       expect(result.aiMessage.content).toBe('Supportive response');
       expect(mockPrismaService.aiMessage.create).toHaveBeenCalledTimes(2);
-      expect(mockGenerateContent).toHaveBeenCalledTimes(2); // Analysis + Generation
+      expect(mockGenerateContent).toHaveBeenCalledTimes(3); // Title + Analysis + Generation
     });
 
     it('should trigger safety fallback if risk level is high', async () => {
@@ -123,6 +130,13 @@ describe('AiChatService', () => {
         id: 'msg-id',
         content: '...',
         sender: AiSender.AI,
+      });
+
+      // Mock Title Generation
+      mockGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () => 'Crisis Title',
+        },
       });
 
       // Mock Gemini analysis response (High Risk)
@@ -155,8 +169,8 @@ describe('AiChatService', () => {
         }),
       );
 
-      // Should NOT call generateContent for the response (only for analysis)
-      expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+      // Should NOT call generateContent for the response (only for analysis + title)
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     });
   });
 });
