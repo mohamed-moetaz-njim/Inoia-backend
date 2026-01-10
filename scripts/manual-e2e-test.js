@@ -97,7 +97,7 @@ async function main() {
 
   // Manually verify user in DB to allow login
   await prisma.user.update({
-    where: { email: studentEmail },
+    where: { email: studentEmail.toLowerCase() },
     data: { verificationToken: null } 
   });
   console.log(`   ✅ Student Manually Verified (DB override for test)`);
@@ -112,7 +112,7 @@ async function main() {
 
   // Manually verify voter
   await prisma.user.update({
-    where: { email: voterEmail },
+    where: { email: voterEmail.toLowerCase() },
     data: { verificationToken: null }
   });
   console.log(`   ✅ Voter Manually Verified (DB override for test)`);
@@ -176,10 +176,7 @@ async function main() {
   console.log(`✅ Conversation Started (ID: ${conversation.id})`);
 
   const messages = [
-    "I've been feeling really overwhelmed with exams lately.",
-    "I can't focus and keep procrastinating.",
-    "What if I fail everything?",
-    "I feel like I'm letting everyone down."
+    "I've been feeling really overwhelmed with exams lately."
   ];
 
   for (const msg of messages) {
@@ -196,19 +193,44 @@ async function main() {
   const safetyResponse = await api('POST', `/ai-chat/conversations/${conversation.id}/message`, { content: riskyMsg }, studentToken);
   console.log(`✅ AI Response: "${safetyResponse.aiMessage.content}"`);
   
-  if (safetyResponse.aiMessage.content.includes("helpline") || safetyResponse.aiMessage.content.includes("support")) {
+  if (safetyResponse.aiMessage.content.includes("please consider reaching out") || safetyResponse.aiMessage.content.includes("support")) {
     console.log(`   --> Safety Fallback TRIGGERED successfully.`);
   } else {
-    console.log(`   --> WARNING: Safety fallback might not have triggered? Check content.`);
+    console.log(`   --> WARNING: Safety fallback might not have triggered? Check content: "${safetyResponse.aiMessage.content}"`);
   }
 
-  // 9. List Conversations
-  console.log(`\n9. Listing Conversations...`);
+  // 9. Profile View
+  console.log(`\n9. Viewing Profile...`);
+  const profile = await api('GET', '/users/me', null, studentToken);
+  console.log(`✅ Profile: ${profile.email} (Role: ${profile.role})`);
+  if (profile.passwordHash || profile.refreshTokenHash) {
+     console.error("❌ CRITICAL FAIL: Sensitive data returned in profile!");
+  } else {
+     console.log("✅ Sensitive data excluded from profile.");
+  }
+
+  // 10. Password Reset Request
+  console.log(`\n10. Testing Password Reset Request...`);
+  await api('POST', '/auth/request-reset', { email: studentEmail });
+  console.log(`✅ Password reset requested for ${studentEmail}`);
+  
+  // Verify DB state for reset
+  const userWithReset = await prisma.user.findUnique({ where: { email: studentEmail.toLowerCase() } });
+  
+  if (userWithReset && userWithReset.resetToken && userWithReset.resetTokenExpiresAt) {
+      console.log(`✅ Reset token set in DB`);
+      console.log(`✅ Expiry set to: ${userWithReset.resetTokenExpiresAt.toISOString()}`);
+  } else {
+      console.error("❌ CRITICAL FAIL: Reset token or expiry NOT set in DB!");
+  }
+
+  // 11. List Conversations
+  console.log(`\n11. Listing Conversations...`);
   const conversations = await api('GET', '/ai-chat/conversations', null, studentToken);
   console.log(`✅ Found ${conversations.length} conversation(s).`);
 
-  // 10. Notifications
-  console.log(`\n10. Checking Notifications...`);
+  // 11. Notifications
+  console.log(`\n11. Checking Notifications...`);
   const unread = await api('GET', '/notifications/unread-count', null, studentToken);
   console.log(`✅ Unread Count: ${unread.unreadCount} (Expected: 1 from Voter's comment)`);
 

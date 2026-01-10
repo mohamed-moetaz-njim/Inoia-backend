@@ -28,6 +28,7 @@ const mockUsersService = {
 
 const mockEmailService = {
   sendVerificationEmail: jest.fn(),
+  sendPasswordResetEmail: jest.fn(),
 };
 
 const mockJwtService = {
@@ -261,14 +262,25 @@ describe('AuthService', () => {
       await service.requestPasswordReset('yamiigraphics@gmail.com');
       expect(mockUsersService.update).toHaveBeenCalledWith({
         where: { id: '1' },
-        data: { resetToken: 'hashed-value' },
+        data: expect.objectContaining({
+          resetToken: 'hashed-value',
+          resetTokenExpiresAt: expect.any(Date),
+        }),
       });
+      expect(mockEmailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+        'yamiigraphics@gmail.com',
+        'mock-uuid',
+      );
     });
 
     it('resetPassword should update password', async () => {
+      const futureDate = new Date();
+      futureDate.setMinutes(futureDate.getMinutes() + 15);
+
       mockUsersService.findOne.mockResolvedValue({
         id: '1',
         resetToken: 'hashed',
+        resetTokenExpiresAt: futureDate,
         updatedAt: new Date(),
       });
       (argon2.verify as jest.Mock).mockResolvedValue(true);
@@ -280,6 +292,7 @@ describe('AuthService', () => {
         data: expect.objectContaining({
           passwordHash: 'hashed-value',
           resetToken: null,
+          resetTokenExpiresAt: null,
         }),
       });
     });

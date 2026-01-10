@@ -180,10 +180,14 @@ describe('Authorization (e2e)', () => {
       expect(refreshToken).toBeDefined();
 
       // 2. Request Reset
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+      
       const resetReq = await prisma.user.update({
         where: { id: user.id },
         data: {
           resetToken: await argon2.hash('token123'),
+          resetTokenExpiresAt: expiresAt,
           updatedAt: new Date(),
         },
       });

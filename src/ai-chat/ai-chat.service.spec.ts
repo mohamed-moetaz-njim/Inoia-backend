@@ -22,6 +22,7 @@ jest.mock('@google/generative-ai', () => {
 
 describe('AiChatService', () => {
   let service: AiChatService;
+  let prisma: PrismaService;
 
   const mockPrismaService = {
     aiConversation: {
@@ -163,14 +164,14 @@ describe('AiChatService', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             content: expect.stringContaining(
-              "if you're in crisis, please reach out",
+              "please consider reaching out",
             ),
           }),
         }),
       );
 
-      // Should NOT call generateContent for the response (only for analysis + title)
-      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+      // Should call generateContent 3 times (Title + Analysis + Response)
+      expect(mockGenerateContent).toHaveBeenCalledTimes(3);
     });
   });
 });

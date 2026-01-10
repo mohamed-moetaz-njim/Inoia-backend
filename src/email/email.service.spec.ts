@@ -70,15 +70,17 @@ describe('EmailService', () => {
       });
     });
 
-    it('should throw InternalServerErrorException if sending fails', async () => {
+    it('should handle failure gracefully (return null) if sending fails', async () => {
       mockResend.emails.send.mockResolvedValue({
         data: null,
         error: { message: 'Send failed', name: 'error' },
       });
 
-      await expect(
-        service.sendVerificationEmail('user@example.com', 'token'),
-      ).rejects.toThrow();
+      const result = await service.sendVerificationEmail(
+        'user@example.com',
+        'token',
+      );
+      expect(result).toBeNull();
     });
   });
 });

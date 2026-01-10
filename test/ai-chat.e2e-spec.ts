@@ -138,7 +138,7 @@ describe('AI Chat (e2e)', () => {
       const updatedConv = await prisma.aiConversation.findUnique({
         where: { id: conversationId },
       });
-      expect(updatedConv.title).toBe('Test Conversation Title');
+      expect(updatedConv?.title).toBe('Test Conversation Title');
     });
 
     it('should handle high risk messages with safety fallback', async () => {
@@ -162,13 +162,20 @@ describe('AI Chat (e2e)', () => {
         },
       });
 
+      // Mock Response (Even if high risk, we generate a response now)
+      mockGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () => 'I hear you are in pain.',
+        },
+      });
+
       const res = await request(app.getHttpServer())
         .post(`/ai-chat/conversations/${conversationId}/message`)
         .set('Authorization', `Bearer ${token}`)
         .send({ content: 'I am in danger' })
         .expect(201);
 
-      expect(res.body.aiMessage.content).toContain("if you're in crisis");
+      expect(res.body.aiMessage.content).toContain("please consider reaching out");
       // Should verify that generateContent was NOT called for the response generation
       // But since we can't easily access the spy call count for the second call here without complex setup or resetting mocks carefully, checking content is good enough.
     });
