@@ -14,7 +14,7 @@ import { UpdateReportDto } from './dto/update-report.dto';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role, ReportStatus } from '@prisma/client';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -28,6 +28,7 @@ export class ReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('reports')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create a report' })

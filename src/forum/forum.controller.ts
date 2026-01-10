@@ -20,7 +20,7 @@ import { GetCurrentUser, GetCurrentUserId, Public } from '../common/decorators';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { AtGuard } from '../common/guards';
 import { JwtPayload } from '../auth/types';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -72,7 +72,7 @@ export class ForumController {
   // --- Write Operations ---
 
   @Post('posts')
-  @UseGuards(AtGuard)
+  @UseGuards(AtGuard, ThrottlerGuard)
   @ApiBearerAuth('JWT-auth')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 posts per minute
   @ApiOperation({ summary: 'Create a new post' })
@@ -110,7 +110,7 @@ export class ForumController {
   }
 
   @Post('posts/:id/comments')
-  @UseGuards(AtGuard)
+  @UseGuards(AtGuard, ThrottlerGuard)
   @ApiBearerAuth('JWT-auth')
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 comments per minute
   @ApiOperation({ summary: 'Add a comment to a post' })

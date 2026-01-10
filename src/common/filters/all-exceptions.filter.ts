@@ -50,8 +50,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const err = exception as any;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      this.logger.error(`Error: ${err.message}`, err.stack);
+      
+      // Safe logging for production
+      if (process.env.NODE_ENV === 'production') {
+         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+         this.logger.error(`Unexpected Error: ${err.name || 'Unknown'}`);
+      } else {
+         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+         this.logger.error(`Error: ${err.message}`, err.stack);
+      }
     }
 
     const responseBody = {

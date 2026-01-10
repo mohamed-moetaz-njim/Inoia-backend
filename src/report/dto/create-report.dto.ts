@@ -2,7 +2,10 @@ import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateReportDto {
-  @ApiProperty({ example: 'Inappropriate content', description: 'Reason for report' })
+  @ApiProperty({
+    example: 'Inappropriate content',
+    description: 'Reason for report',
+  })
   @IsNotEmpty()
   @IsString()
   reason: string;

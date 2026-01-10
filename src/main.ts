@@ -1,6 +1,7 @@
 import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -8,11 +9,13 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const configService = app.get(ConfigService);
+
   // Security Middleware
   app.use(helmet());
   app.enableCors({
-    origin: process.env.FRONTEND_URL || true, // Fallback to allow all in dev
-    credentials: true,
+    origin: configService.get<string>('FRONTEND_URL'),
+    credentials: false, // JWT is in header, no cookies
   });
 
   // Global Validation

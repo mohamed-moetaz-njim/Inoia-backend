@@ -131,7 +131,7 @@ Always prioritize safety and well-being`;
     try {
       analysis = await this.analyzeMessage(content, conversation.messages);
     } catch (error) {
-      this.logger.error('Analysis failed', error);
+      this.logger.error('Analysis failed');
       // Fallback safe analysis
       analysis = {
         emotionalState: 'unknown',
@@ -144,21 +144,23 @@ Always prioritize safety and well-being`;
     // 4. Check Risk Level & Generate Response
     let aiResponseContent: string;
 
-    if (analysis.riskLevel >= 8) {
+    try {
+      aiResponseContent = await this.generateResponse(
+        content,
+        analysis,
+        conversation.messages,
+      );
+    } catch (error) {
+      this.logger.error('Response generation failed');
       aiResponseContent =
-        "I'm here to listen, but if you're in crisis, please reach out to a trusted adult or professional.";
-    } else {
-      try {
-        aiResponseContent = await this.generateResponse(
-          content,
-          analysis,
-          conversation.messages,
-        );
-      } catch (error) {
-        this.logger.error('Response generation failed', error);
-        aiResponseContent =
-          "I'm having trouble responding right now. Please try again.";
-      }
+        "I'm having trouble responding right now. Please try again.";
+    }
+
+    // Enforce safety message for high risk
+    if (analysis.riskLevel >= 7) {
+      const safetyMessage =
+        "\n\nIf you're going through a difficult time, please consider reaching out to a trusted adult or a mental health professional. You don't have to face this alone.";
+      aiResponseContent += safetyMessage;
     }
 
     // 5. Save AI Response
@@ -194,7 +196,7 @@ Always prioritize safety and well-being`;
         data: { title },
       });
     } catch (error) {
-      this.logger.error('Title generation failed', error);
+      this.logger.error('Title generation failed');
       const fallbackTitle =
         firstMessage.substring(0, 30) + (firstMessage.length > 30 ? '...' : '');
       await this.prisma.aiConversation.update({
@@ -237,7 +239,7 @@ Always prioritize safety and well-being`;
     try {
       return JSON.parse(cleanText) as AnalysisResult;
     } catch (e) {
-      this.logger.error('Failed to parse analysis JSON', text);
+      this.logger.error('Failed to parse analysis JSON');
       throw e;
     }
   }

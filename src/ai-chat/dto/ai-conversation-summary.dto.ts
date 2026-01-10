@@ -17,6 +17,9 @@ export class AiConversationSummaryDto {
   @ApiProperty()
   createdAt: Date;
 
-  @ApiProperty({ type: [AiMessageDto], description: 'Contains the latest message as a preview' })
+  @ApiProperty({
+    type: [AiMessageDto],
+    description: 'Contains the latest message as a preview',
+  })
   messages: AiMessageDto[];
 }

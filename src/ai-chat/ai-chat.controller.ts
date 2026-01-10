@@ -5,10 +5,12 @@ import {
   Body,
   Param,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { AiChatService } from './ai-chat.service';
 import { GetCurrentUserId } from '../common/decorators/get-current-user-id.decorator';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -30,7 +32,8 @@ export class AiChatController {
   @Get('conversations')
   @ApiOperation({ summary: 'Get all user conversations' })
   @ApiOkResponse({
-    description: 'Return list of conversations with the latest message preview. Titles are nullable.',
+    description:
+      'Return list of conversations with the latest message preview. Titles are nullable.',
     type: [AiConversationSummaryDto],
   })
   getUserConversations(@GetCurrentUserId() userId: string) {
@@ -40,7 +43,8 @@ export class AiChatController {
   @Post('conversations')
   @ApiOperation({ summary: 'Start a new conversation' })
   @ApiCreatedResponse({
-    description: 'Conversation created. Title is initially null and will be auto-generated on the first message.',
+    description:
+      'Conversation created. Title is initially null and will be auto-generated on the first message.',
     type: AiConversationSummaryDto,
   })
   createConversation(@GetCurrentUserId() userId: string) {
@@ -62,6 +66,8 @@ export class AiChatController {
   }
 
   @Post('conversations/:id/message')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 messages per minute
   @ApiOperation({
     summary: 'Send a message to the AI',
     description:
