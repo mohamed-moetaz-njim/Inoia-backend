@@ -178,6 +178,7 @@ model AdminAction {
   targetUserId    String?
   targetPostId    String?
   targetCommentId String?
+  details         String?
   createdAt       DateTime @default(now())
 
   admin User @relation("AdminActions", fields: [adminId], references: [id])

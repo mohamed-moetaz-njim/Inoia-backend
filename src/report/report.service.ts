@@ -189,7 +189,7 @@ export class ReportService {
           targetPostId: report.postId,
           targetCommentId: report.commentId,
           targetUserId,
-          // details: actionNote, // 'details' field added in migration 20260105 - BUT NOT IN CURRENT SCHEMA
+          details: actionNote,
         },
       });
 
