@@ -53,7 +53,10 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 600000 } }) // 3 requests per 10 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend verification email' })
-  @ApiResponse({ status: 200, description: 'Verification email sent if user exists and is unverified.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification email sent if user exists and is unverified.',
+  })
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(dto.email);
   }

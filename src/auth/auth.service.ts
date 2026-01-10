@@ -51,7 +51,8 @@ export class AuthService {
     await this.emailService.sendVerificationEmail(dto.email, verificationToken);
 
     return {
-      message: 'User registered. Please check your email to verify your account.',
+      message:
+        'User registered. Please check your email to verify your account.',
       userId: user.id,
     };
   }
@@ -59,10 +60,13 @@ export class AuthService {
   async resendVerificationEmail(emailInput: string) {
     const email = emailInput.toLowerCase();
     const user = await this.usersService.findOne({ email });
-    
+
     // Security: Don't reveal if user exists
     if (!user) {
-      return { message: 'If your email is registered, a verification link has been sent.' };
+      return {
+        message:
+          'If your email is registered, a verification link has been sent.',
+      };
     }
 
     // If already verified, return success (don't send email)
@@ -82,11 +86,15 @@ export class AuthService {
     // Send email
     await this.emailService.sendVerificationEmail(email, verificationToken);
 
-    return { message: 'If your email is registered, a verification link has been sent.' };
+    return {
+      message:
+        'If your email is registered, a verification link has been sent.',
+    };
   }
 
   async signin(dto: LoginDto) {
-    const user = await this.usersService.findOne({ email: dto.email });
+    const email = dto.email.toLowerCase();
+    const user = await this.usersService.findOne({ email });
     if (!user) throw new UnauthorizedException('Access Denied');
     if (user.deletedAt) throw new UnauthorizedException('Access Denied');
     if (!user.passwordHash) throw new UnauthorizedException('Access Denied');
@@ -186,43 +194,32 @@ export class AuthService {
     };
   }
 
-  async requestPasswordReset(email: string) {
+  async requestPasswordReset(emailInput: string) {
+    const email = emailInput.toLowerCase();
     const user = await this.usersService.findOne({ email });
-    if (!user) return; // Silent return for privacy
+    if (!user) return { message: 'If email exists, a reset link has been sent.' }; // Silent return for privacy
 
     const resetToken = uuidv4();
     const hashedResetToken = await argon2.hash(resetToken);
 
-    // In a real app, we would store an expiration time as well, or encode it in the token.
-    // But schema only has `resetToken` string.
-    // I'll assume the token validity is checked by created time or I rely on external job to clear old tokens?
-    // "One-time reset token: Hashed at rest, Short TTL, Invalidated immediately after use"
-    // Since schema is fixed and `resetToken` is a single string field, I'll store the hash there.
-    // I can't store expiration unless I use another field or encoded in the token (but token is hashed).
-    // Wait, "Short TTL". If I can't store expiry in DB, I must rely on something else.
-    // Maybe I can store "token|expiry" string in the field? But it's hashed.
-    // Ah, `resetToken` field in User model is just `String?`.
-    // If I want to enforce TTL, I should probably use `updatedAt` if the token was just set?
-    // Or maybe the schema allows me to add fields? "No extra columns".
-    // Then I must assume `updatedAt` is sufficient if I update it when setting token?
-    // But `updatedAt` changes on other updates too.
-    // I will implement a "stateless" token approach where the token itself contains the expiry,
-    // BUT the prompt says "Hashed at rest".
-    // If I hash "token_string", I can't read the expiry from the hash.
-    // So I must store the expiry in the DB or use `updatedAt` logic cautiously.
-    // Let's assume `updatedAt` is the timestamp of the last token generation if `resetToken` is not null.
-    // This is a bit flaky but fits the constraints.
+    // Set expiry to 15 minutes from now
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
     await this.usersService.update({
       where: { id: user.id },
-      data: { resetToken: hashedResetToken },
+      data: {
+        resetToken: hashedResetToken,
+        resetTokenExpiresAt: expiresAt,
+      },
     });
 
-    // TODO: Send reset email with token
+    await this.emailService.sendPasswordResetEmail(email, resetToken);
     return { message: 'If email exists, a reset link has been sent.' };
   }
 
-  async resetPassword(email: string, token: string, newPassword: string) {
+  async resetPassword(emailInput: string, token: string, newPassword: string) {
+    const email = emailInput.toLowerCase();
     const user = await this.usersService.findOne({ email });
     if (!user || !user.resetToken)
       throw new BadRequestException('Invalid request');
@@ -230,15 +227,12 @@ export class AuthService {
     const matches = await argon2.verify(user.resetToken, token);
     if (!matches) throw new BadRequestException('Invalid token');
 
-    // Check TTL (e.g. 15 mins) using updatedAt
-    const now = new Date();
-    const tokenAge = now.getTime() - user.updatedAt.getTime();
-    if (tokenAge > 15 * 60 * 1000) {
-      // 15 mins
+    // Check TTL using dedicated field
+    if (!user.resetTokenExpiresAt || new Date() > user.resetTokenExpiresAt) {
       // Invalidate
       await this.usersService.update({
         where: { id: user.id },
-        data: { resetToken: null },
+        data: { resetToken: null, resetTokenExpiresAt: null },
       });
       throw new BadRequestException('Token expired');
     }
@@ -249,6 +243,7 @@ export class AuthService {
       data: {
         passwordHash,
         resetToken: null,
+        resetTokenExpiresAt: null,
         refreshTokenHash: null, // Invalidate all sessions
       },
     });

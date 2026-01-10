@@ -50,6 +50,7 @@ model User {
   // Auth fields
   verificationToken String?
   resetToken        String?
+  resetTokenExpiresAt DateTime?
   refreshTokenHash  String?
 
   therapistVerification TherapistVerification? @relation("TherapistCandidate")
