@@ -92,6 +92,9 @@ model Post {
   comments Comment[]
   votes    Vote[]
   reports  Report[]
+
+  @@index([createdAt])
+  @@index([authorId])
 }
 
 model Comment {
@@ -108,6 +111,10 @@ model Comment {
   author User @relation(fields: [authorId], references: [id])
   votes  Vote[]
   reports Report[]
+
+  @@index([createdAt])
+  @@index([authorId])
+  @@index([postId])
 }
 
 model Vote {
@@ -121,6 +128,10 @@ model Vote {
   user    User     @relation(fields: [userId], references: [id])
   post    Post?    @relation(fields: [postId], references: [id])
   comment Comment? @relation(fields: [commentId], references: [id])
+
+  @@index([userId])
+  @@index([postId])
+  @@index([commentId])
 }
 
 model Report {
@@ -138,6 +149,10 @@ model Report {
   post     Post?  @relation(fields: [postId], references: [id])
   comment  Comment? @relation(fields: [commentId], references: [id])
   resolvedBy User? @relation("ReportResolver", fields: [resolvedByAdminId], references: [id])
+
+  @@index([reporterId])
+  @@index([postId])
+  @@index([commentId])
 }
 
 model AiConversation {

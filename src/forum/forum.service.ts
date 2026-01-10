@@ -65,9 +65,6 @@ export class ForumService {
           author: {
             select: this.getAuthorSelect(),
           },
-          votes: {
-            select: { userId: true, value: true },
-          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -85,6 +82,49 @@ export class ForumService {
       }),
     ]);
 
+    // Optimize vote counting:
+    // 1. Fetch Aggregates (Sum of votes per post)
+    // 2. Fetch User Vote (if logged in)
+    const postIds = posts.map((p) => p.id);
+
+    // 1. Aggregates
+    const voteAggregates = await this.prisma.vote.groupBy({
+      by: ['postId'],
+      _sum: {
+        value: true,
+      },
+      where: {
+        postId: { in: postIds },
+      },
+    });
+
+    const voteMap = new Map<string, number>();
+    voteAggregates.forEach((agg) => {
+      if (agg.postId) {
+        voteMap.set(agg.postId, agg._sum.value || 0);
+      }
+    });
+
+    // 2. User Votes
+    const userVoteMap = new Map<string, number>();
+    if (currentUserId && postIds.length > 0) {
+      const userVotes = await this.prisma.vote.findMany({
+        where: {
+          userId: currentUserId,
+          postId: { in: postIds },
+        },
+        select: {
+          postId: true,
+          value: true,
+        },
+      });
+      userVotes.forEach((v) => {
+        if (v.postId) {
+          userVoteMap.set(v.postId, v.value);
+        }
+      });
+    }
+
     return {
       data: posts.map((post) => {
         // Type assertion to help TS understand the structure returned by include
@@ -94,12 +134,11 @@ export class ForumService {
           therapistVerification: { certificationReference: string } | null;
         };
 
+        const voteCount = voteMap.get(post.id) || 0;
+        const userVote = userVoteMap.get(post.id) || 0;
+
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { author: _, votes, ...restPost } = post;
-        const voteCount = votes.reduce((sum, v) => sum + v.value, 0);
-        const userVote = currentUserId
-          ? votes.find((v) => v.userId === currentUserId)?.value || 0
-          : 0;
+        const { author: _, ...restPost } = post;
 
         const result: any = {
           ...restPost,
