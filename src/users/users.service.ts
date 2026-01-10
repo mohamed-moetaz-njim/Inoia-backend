@@ -3,9 +3,30 @@ import { PrismaService } from '../prisma/prisma.service';
 import { User, Prisma } from '@prisma/client';
 import { generatePseudonym } from '../common/utils';
 
+export const safeUserSelect = {
+  id: true,
+  email: true,
+  username: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+  isBanned: true,
+  usernameLocked: true,
+  deletedAt: true,
+};
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
+
+  async findProfile(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: safeUserSelect,
+    });
+    if (user && user.deletedAt) return null;
+    return user;
+  }
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
     // Generate unique username

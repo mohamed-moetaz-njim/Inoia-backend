@@ -17,6 +17,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { plainToInstance } from 'class-transformer';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
@@ -29,9 +31,9 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Return user profile.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
   async getMe(@GetCurrentUserId() userId: string) {
-    const user = await this.usersService.findOne({ id: userId });
+    const user = await this.usersService.findProfile(userId);
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return plainToInstance(UserResponseDto, user);
   }
 
   @Post('reroll-username')
@@ -39,7 +41,7 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'Username rerolled.' })
   @ApiResponse({ status: 403, description: 'Username is locked.' })
   async rerollUsername(@GetCurrentUserId() userId: string) {
-    const user = await this.usersService.findOne({ id: userId });
+    const user = await this.usersService.findProfile(userId);
     if (!user) throw new NotFoundException('User not found');
     if (user.usernameLocked) throw new ForbiddenException('Username is locked');
 
@@ -58,20 +60,23 @@ export class UsersController {
       retries--;
     }
 
-    return this.usersService.update({
+    const updatedUser = await this.usersService.update({
       where: { id: userId },
       data: { username },
     });
+
+    return plainToInstance(UserResponseDto, updatedUser);
   }
 
   @Post('lock-username')
   @ApiOperation({ summary: 'Lock username' })
   @ApiResponse({ status: 201, description: 'Username locked.' })
   async lockUsername(@GetCurrentUserId() userId: string) {
-    return this.usersService.update({
+    const updatedUser = await this.usersService.update({
       where: { id: userId },
       data: { usernameLocked: true },
     });
+    return plainToInstance(UserResponseDto, updatedUser);
   }
 
   @Delete('me')
