@@ -21,6 +21,10 @@ const mockPrismaService = {
     findUnique: jest.fn(),
     update: jest.fn(),
   },
+  vote: {
+    groupBy: jest.fn(),
+    findMany: jest.fn(),
+  },
 };
 
 const mockNotificationService = {
@@ -77,6 +81,10 @@ describe('ForumService', () => {
     it('should return paginated posts', async () => {
       prisma.post.findMany.mockResolvedValue([mockPost]);
       prisma.post.count.mockResolvedValue(1);
+      prisma.vote.groupBy.mockResolvedValue([
+        { postId: 'post1', _sum: { value: 10 } },
+      ]);
+      prisma.vote.findMany.mockResolvedValue([]);
 
       const result = await service.findAllPosts({ page: 1, limit: 10 });
 
@@ -87,7 +95,7 @@ describe('ForumService', () => {
         role: Role.STUDENT,
         therapistProfile: undefined,
       });
-      expect(result.data[0].voteCount).toBe(0);
+      expect(result.data[0].voteCount).toBe(10);
     });
   });
 
