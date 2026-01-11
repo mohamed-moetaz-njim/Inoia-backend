@@ -13,7 +13,24 @@ import { ReportStatus, Role } from '@prisma/client';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 
-const mockPrismaService = {
+import { ExecutionContext } from '@nestjs/common';
+
+interface MockPrismaServiceType {
+  post: { findUnique: jest.Mock; update: jest.Mock };
+  comment: { findUnique: jest.Mock; update: jest.Mock };
+  report: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    findMany: jest.Mock;
+    count: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+  };
+  adminAction: { create: jest.Mock };
+  $transaction: jest.Mock;
+}
+
+const mockPrismaService: MockPrismaServiceType = {
   post: { findUnique: jest.fn(), update: jest.fn() },
   comment: { findUnique: jest.fn(), update: jest.fn() },
   report: {
@@ -25,12 +42,12 @@ const mockPrismaService = {
     update: jest.fn(),
   },
   adminAction: { create: jest.fn() },
-  $transaction: jest.fn((cb) => cb(mockPrismaService)),
+  $transaction: jest.fn((cb: (prisma: any) => any) => cb(mockPrismaService)),
 };
 
 @Global()
 @Module({
-  providers: [{ provide: PrismaService, useValue: mockPrismaService }],
+  providers: [{ provide: PrismaService, useValue: mockPrismaService as unknown as PrismaService }],
   exports: [PrismaService],
 })
 class MockPrismaModule {}
@@ -40,7 +57,7 @@ describe('ReportController (e2e)', () => {
   let prismaService: PrismaService;
 
   const mockAtGuard = {
-    canActivate: (context) => {
+    canActivate: (context: ExecutionContext) => {
       const req = context.switchToHttp().getRequest();
       const userId = req.headers['x-user-id'] || 'user-id';
       const role = req.headers['x-role'] || Role.STUDENT;
@@ -50,7 +67,7 @@ describe('ReportController (e2e)', () => {
   };
 
   const mockRolesGuard = {
-    canActivate: (context) => {
+    canActivate: (context: ExecutionContext) => {
       const req = context.switchToHttp().getRequest();
       const user = req.user;
       if (req.route.path.includes('admin') && user?.role !== 'ADMIN')

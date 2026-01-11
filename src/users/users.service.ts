@@ -1,6 +1,6 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { User, Prisma } from '@prisma/client';
+import { User, Prisma, Role, VerificationStatus } from '@prisma/client';
 import { generatePseudonym } from '../common/utils';
 
 export const safeUserSelect = {
@@ -26,6 +26,99 @@ export class UsersService {
     });
     if (user && user.deletedAt) return null;
     return user;
+  }
+
+  async getPublicProfile(username: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        username: {
+          equals: username,
+          mode: 'insensitive',
+        },
+        deletedAt: null,
+      },
+      include: {
+        therapistVerification: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isVerifiedTherapist =
+      user.role === Role.THERAPIST &&
+      user.therapistVerification?.status === VerificationStatus.APPROVED;
+
+    const baseProfile = {
+      username: user.username,
+      role: user.role,
+      roleBadge: isVerifiedTherapist ? 'Licensed Therapist' : 'Member',
+      joinedDate: user.createdAt.toISOString().split('T')[0], // YYYY-MM-DD
+    };
+
+    if (!isVerifiedTherapist) {
+      return baseProfile;
+    }
+
+    // Fetch extra data for therapists
+    const [recentPosts, recentComments] = await Promise.all([
+      this.prisma.post.findMany({
+        where: {
+          authorId: user.id,
+          deletedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.comment.findMany({
+        where: {
+          authorId: user.id,
+          deletedAt: null,
+          post: {
+            deletedAt: null,
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          postId: true,
+          post: {
+            select: {
+              title: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      ...baseProfile,
+      profession: user.profession,
+      workplace: user.workplace,
+      bio: user.bio,
+      verificationBadge: 'Verified Therapist',
+      recentPosts: recentPosts.map((p) => ({
+        id: p.id,
+        title: p.title,
+        createdAt: p.createdAt,
+      })),
+      recentComments: recentComments.map((c) => ({
+        id: c.id,
+        postId: c.postId,
+        postTitle: c.post.title,
+        excerpt: c.content.substring(0, 100) + (c.content.length > 100 ? '...' : ''),
+        createdAt: c.createdAt,
+      })),
+    };
   }
 
   async create(data: Prisma.UserCreateInput): Promise<User> {

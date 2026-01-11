@@ -65,6 +65,11 @@ model User {
   notifications         Notification[]
   aiConversations       AiConversation[]
   adminActions          AdminAction[] @relation("AdminActions")
+
+  // Public Profile Fields (Therapist Only)
+  profession String?
+  workplace  String?
+  bio        String?
 }
 
 model TherapistVerification {
