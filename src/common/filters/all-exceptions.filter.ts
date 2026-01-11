@@ -16,8 +16,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    // In certain situations `httpAdapter` might not be available in the
-    // constructor method, thus we should resolve it here.
     const { httpAdapter } = this.httpAdapterHost;
 
     const ctx = host.switchToHttp();
@@ -49,14 +47,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const err = exception as any;
-      
+
       // Safe logging for production
       if (process.env.NODE_ENV === 'production') {
-         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-         this.logger.error(`Unexpected Error: ${err.name || 'Unknown'}`);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        this.logger.error(`Unexpected Error: ${err.name || 'Unknown'}`);
       } else {
-         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-         this.logger.error(`Error: ${err.message}`, err.stack);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        this.logger.error(`Error: ${err.message}`, err.stack);
       }
     }
 

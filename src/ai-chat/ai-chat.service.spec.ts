@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiSender } from '@prisma/client';
 
-// Mock GoogleGenerativeAI
 const mockGenerateContent = jest.fn();
 const mockGetGenerativeModel = jest.fn().mockReturnValue({
   generateContent: mockGenerateContent,
@@ -67,28 +66,25 @@ describe('AiChatService', () => {
     const content = 'I feel sad';
 
     it('should process message and return response', async () => {
-      // Mock Prisma responses
       mockPrismaService.aiConversation.findUnique.mockResolvedValue({
         id: conversationId,
         userId,
         messages: [],
       });
       mockPrismaService.aiMessage.create
-        .mockResolvedValueOnce({ id: 'msg-1', content, sender: AiSender.USER }) // User message
+        .mockResolvedValueOnce({ id: 'msg-1', content, sender: AiSender.USER })
         .mockResolvedValueOnce({
           id: 'msg-2',
           content: 'Supportive response',
           sender: AiSender.AI,
-        }); // AI message
+        });
 
-      // Mock Title Generation
       mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () => 'Conversation Title',
         },
       });
 
-      // Mock Gemini analysis response
       mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () =>
@@ -117,11 +113,10 @@ describe('AiChatService', () => {
       expect(result.userMessage.content).toBe(content);
       expect(result.aiMessage.content).toBe('Supportive response');
       expect(mockPrismaService.aiMessage.create).toHaveBeenCalledTimes(2);
-      expect(mockGenerateContent).toHaveBeenCalledTimes(3); // Title + Analysis + Generation
+      expect(mockGenerateContent).toHaveBeenCalledTimes(3);
     });
 
     it('should trigger safety fallback if risk level is high', async () => {
-      // Mock Prisma responses
       mockPrismaService.aiConversation.findUnique.mockResolvedValue({
         id: conversationId,
         userId,
@@ -133,14 +128,12 @@ describe('AiChatService', () => {
         sender: AiSender.AI,
       });
 
-      // Mock Title Generation
       mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () => 'Crisis Title',
         },
       });
 
-      // Mock Gemini analysis response (High Risk)
       mockGenerateContent.mockResolvedValueOnce({
         response: {
           text: () =>
@@ -159,18 +152,14 @@ describe('AiChatService', () => {
         'I want to hurt myself',
       );
 
-      // Should verify that the second create call (AI response) contains the safety message
       expect(mockPrismaService.aiMessage.create).toHaveBeenLastCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            content: expect.stringContaining(
-              "please consider reaching out",
-            ),
+            content: expect.stringContaining('please consider reaching out'),
           }),
         }),
       );
 
-      // Should call generateContent 3 times (Title + Analysis + Response)
       expect(mockGenerateContent).toHaveBeenCalledTimes(3);
     });
   });

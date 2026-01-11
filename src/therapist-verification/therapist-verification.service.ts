@@ -18,7 +18,6 @@ export class TherapistVerificationService {
     const user = await this.usersService.findOne({ id: userId });
     if (!user) throw new NotFoundException('User not found');
 
-    // Check if pending exists
     const existing = await this.prisma.therapistVerification.findUnique({
       where: { userId },
     });
@@ -30,13 +29,13 @@ export class TherapistVerificationService {
       if (existing.status === VerificationStatus.APPROVED) {
         throw new BadRequestException('User already verified');
       }
-      // If REJECTED, allow resubmit? Prompt doesn't specify. Assuming yes, by updating.
+      // Allow resubmission after rejection by updating existing record
       return this.prisma.therapistVerification.update({
         where: { id: existing.id },
         data: {
           status: VerificationStatus.PENDING,
           certificationReference,
-          createdAt: new Date(), // Reset timestamp? Or keep history? Schema has one record per user.
+          createdAt: new Date(), // Reset timestamp for resubmitted requests
         },
       });
     }
@@ -67,7 +66,6 @@ export class TherapistVerificationService {
       throw new BadRequestException('Request is not pending');
     }
 
-    // Transaction to approve and upgrade user
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedRequest = await tx.therapistVerification.update({
         where: { id: requestId },
@@ -83,7 +81,6 @@ export class TherapistVerificationService {
         data: { role: Role.THERAPIST },
       });
 
-      // Log admin action
       await tx.adminAction.create({
         data: {
           adminId,
@@ -109,17 +106,14 @@ export class TherapistVerificationService {
           status: VerificationStatus.REJECTED,
           verifiedByAdminId: adminId,
           verifiedAt: new Date(),
-          // rejectionReason: reason, // Field does not exist in schema
         },
       });
 
-      // Log admin action
       await tx.adminAction.create({
         data: {
           adminId,
           actionType: 'REJECT_THERAPIST',
           targetUserId: request.userId,
-          // reason, // Field does not exist in schema
         },
       });
 

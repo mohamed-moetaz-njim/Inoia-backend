@@ -228,7 +228,6 @@ describe('ForumService', () => {
       await service.createComment('user1', 'post1', { content: 'comment' });
 
       expect(prisma.comment.create).toHaveBeenCalled();
-      // Notification service should not be called if author is same
     });
 
     it('should notify author on comment', async () => {

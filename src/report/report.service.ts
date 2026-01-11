@@ -60,7 +60,6 @@ export class ReportService {
       );
     }
 
-    // Create report
     const report = await this.prisma.report.create({
       data: {
         reporterId: userId,
@@ -131,7 +130,6 @@ export class ReportService {
     if (!report) throw new NotFoundException('Report not found');
 
     return this.prisma.$transaction(async (tx) => {
-      // Update report status
       const updatedReport = await tx.report.update({
         where: { id },
         data: {
@@ -141,7 +139,6 @@ export class ReportService {
         },
       });
 
-      // Handle content deletion if resolved and requested
       if (status === ReportStatus.RESOLVED && deleteContent) {
         if (report.postId) {
           await tx.post.update({
@@ -156,7 +153,6 @@ export class ReportService {
         }
       }
 
-      // Create AdminAction log
       let actionType = 'REPORT_UPDATED';
       if (status === ReportStatus.RESOLVED) actionType = 'REPORT_RESOLVED';
       if (status === ReportStatus.DISMISSED) actionType = 'REPORT_DISMISSED';

@@ -42,9 +42,6 @@ export class EmailService {
         this.logger.error(
           `Failed to send email to ${email}: ${response.error.message}`,
         );
-        // throw new InternalServerErrorException(
-        //   'Failed to send verification email',
-        // );
         return null;
       }
 
@@ -55,7 +52,6 @@ export class EmailService {
     } catch (error) {
       if (error instanceof InternalServerErrorException) throw error;
       this.logger.error(`Failed to send email to ${email}`, error);
-      // Log error and return null without throwing to prevent blocking registration flow
       return null;
     }
   }
@@ -87,9 +83,6 @@ export class EmailService {
         this.logger.error(
           `Failed to send reset email to ${email}: ${response.error.message}`,
         );
-        // We generally don't want to throw here to avoid enumerating emails, but the prompt says "Implement actual email sending".
-        // If we fail silently, the user can't reset.
-        // I'll log and return, letting the AuthService decide if it wants to hide the error (it usually hides user existence).
       } else {
         this.logger.log(
           `Reset email sent to ${email}, ID: ${response.data?.id}`,
@@ -98,7 +91,7 @@ export class EmailService {
       return response;
     } catch (error) {
       this.logger.error(`Failed to send reset email to ${email}`, error);
-      // Suppress error to avoid potential enumeration vectors
+      // Hide account existence; do not throw.
     }
   }
 }

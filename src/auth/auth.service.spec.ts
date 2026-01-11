@@ -13,7 +13,6 @@ import {
 import { Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 
-// Mock dependencies
 jest.mock('argon2');
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('mock-uuid'),
@@ -59,7 +58,6 @@ describe('AuthService', () => {
     usersService = module.get(UsersService);
     jwtService = module.get(JwtService);
 
-    // Default config mocks
     mockConfigService.getOrThrow.mockImplementation((key: string) => {
       if (key === 'JWT_SECRET') return 'at-secret';
       if (key === 'JWT_EXPIRES_IN') return '15m';
@@ -99,12 +97,10 @@ describe('AuthService', () => {
         role: Role.STUDENT,
         username: '',
       });
-      // Verification token update
       expect(mockUsersService.update).toHaveBeenCalledWith({
         where: { id: '1' },
         data: { verificationToken: 'hashed-value' },
       });
-      // Email sent
       expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(
         dto.email,
         'mock-uuid',
@@ -139,9 +135,6 @@ describe('AuthService', () => {
       mockJwtService.signAsync.mockResolvedValue('token');
 
       const result = await service.signin(dto);
-
-      // expect(result).toHaveProperty('refresh_token');
-      // Verify calls
     });
 
     it('should throw UnauthorizedException if user not found', async () => {

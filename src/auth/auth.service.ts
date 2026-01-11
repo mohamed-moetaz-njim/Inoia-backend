@@ -30,15 +30,13 @@ export class AuthService {
 
     const passwordHash = await argon2.hash(dto.password);
 
-    // Create user as STUDENT by default
     const user = await this.usersService.create({
       email,
       passwordHash,
       role: Role.STUDENT,
-      username: '', // Will be generated
+      username: '', // Generated server-side
     });
 
-    // Generate verification token
     const verificationToken = uuidv4();
     const hashedVerificationToken = await argon2.hash(verificationToken);
 
@@ -47,7 +45,6 @@ export class AuthService {
       data: { verificationToken: hashedVerificationToken },
     });
 
-    // Send verification email
     await this.emailService.sendVerificationEmail(dto.email, verificationToken);
 
     return {
@@ -61,7 +58,7 @@ export class AuthService {
     const email = emailInput.toLowerCase();
     const user = await this.usersService.findOne({ email });
 
-    // Security: Don't reveal if user exists
+    // Prevent account enumeration
     if (!user) {
       return {
         message:
@@ -69,12 +66,11 @@ export class AuthService {
       };
     }
 
-    // If already verified, return success (don't send email)
+    // Skip resending if already verified
     if (!user.verificationToken) {
       return { message: 'Email is already verified.' };
     }
 
-    // Generate NEW verification token
     const verificationToken = uuidv4();
     const hashedVerificationToken = await argon2.hash(verificationToken);
 
@@ -83,7 +79,6 @@ export class AuthService {
       data: { verificationToken: hashedVerificationToken },
     });
 
-    // Send email
     await this.emailService.sendVerificationEmail(email, verificationToken);
 
     return {
@@ -144,11 +139,10 @@ export class AuthService {
     const matches = await argon2.verify(user.verificationToken, token);
     if (!matches) throw new BadRequestException('Invalid token');
 
-    // Check Expiry (24 hours)
+    // Verification link expires after 24 hours
     const now = new Date();
     const tokenAge = now.getTime() - user.updatedAt.getTime();
     if (tokenAge > 24 * 60 * 60 * 1000) {
-      // 24 hours
       await this.usersService.update({
         where: { id: user.id },
         data: { verificationToken: null },
@@ -192,12 +186,12 @@ export class AuthService {
   async requestPasswordReset(emailInput: string) {
     const email = emailInput.toLowerCase();
     const user = await this.usersService.findOne({ email });
-    if (!user) return { message: 'If email exists, a reset link has been sent.' }; // Silent return for privacy
+    if (!user)
+      return { message: 'If email exists, a reset link has been sent.' }; // Prevent account enumeration
 
     const resetToken = uuidv4();
     const hashedResetToken = await argon2.hash(resetToken);
 
-    // Set expiry to 15 minutes from now
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
@@ -222,9 +216,7 @@ export class AuthService {
     const matches = await argon2.verify(user.resetToken, token);
     if (!matches) throw new BadRequestException('Invalid token');
 
-    // Check TTL using dedicated field
     if (!user.resetTokenExpiresAt || new Date() > user.resetTokenExpiresAt) {
-      // Invalidate
       await this.usersService.update({
         where: { id: user.id },
         data: { resetToken: null, resetTokenExpiresAt: null },

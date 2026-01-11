@@ -34,7 +34,7 @@ export class ForumService {
   }
 
   private mapAuthor(author: any) {
-    // Constraint: Only THERAPIST authors may expose public profile fields
+    // Expose therapistProfile only for therapist authors
     const isTherapist = author.role === Role.THERAPIST;
     return {
       username: author.username,
@@ -82,12 +82,9 @@ export class ForumService {
       }),
     ]);
 
-    // Optimize vote counting:
-    // 1. Fetch Aggregates (Sum of votes per post)
-    // 2. Fetch User Vote (if logged in)
+    // Compute voteCount and current user's vote per post
     const postIds = posts.map((p) => p.id);
 
-    // 1. Aggregates
     const voteAggregates = await this.prisma.vote.groupBy({
       by: ['postId'],
       _sum: {
@@ -105,7 +102,6 @@ export class ForumService {
       }
     });
 
-    // 2. User Votes
     const userVoteMap = new Map<string, number>();
     if (currentUserId && postIds.length > 0) {
       const userVotes = await this.prisma.vote.findMany({
@@ -127,7 +123,6 @@ export class ForumService {
 
     return {
       data: posts.map((post) => {
-        // Type assertion to help TS understand the structure returned by include
         const author = post.author as unknown as {
           username: string;
           role: Role;
@@ -137,7 +132,7 @@ export class ForumService {
         const voteCount = voteMap.get(post.id) || 0;
         const userVote = userVoteMap.get(post.id) || 0;
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Exclude included author from post payload
         const { author: _, ...restPost } = post;
 
         const result: any = {
@@ -151,13 +146,13 @@ export class ForumService {
         };
 
         if (author.role === Role.THERAPIST && author.therapistVerification) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- result is intentionally built as any
           result.author.therapistProfile = {
             certificationReference:
               author.therapistVerification.certificationReference,
           };
         }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- result is intentionally built as any
         return result;
       }),
       meta: {
@@ -278,8 +273,6 @@ export class ForumService {
     };
   }
 
-  // --- Write Operations ---
-
   async createPost(userId: string, dto: CreatePostDto) {
     const post = await this.prisma.post.create({
       data: {
@@ -305,8 +298,7 @@ export class ForumService {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException('Post not found');
 
-    // Check if deleted
-    if (post.deletedAt) throw new NotFoundException('Post not found'); // Cannot edit deleted posts
+    if (post.deletedAt) throw new NotFoundException('Post not found');
 
     ensureOwnership(post.authorId, userId);
 
@@ -343,7 +335,6 @@ export class ForumService {
   }
 
   async createComment(userId: string, postId: string, dto: CreateCommentDto) {
-    // Ensure post exists and is not deleted
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
     if (!post || post.deletedAt) throw new NotFoundException('Post not found');
 
@@ -362,27 +353,22 @@ export class ForumService {
 
     const { author, ...commentData } = comment;
 
-    // --- Notifications Logic ---
     const commentAuthorUsername = author.username;
 
-    // 1. Notify Post Author
     if (post.authorId !== userId) {
       const content = `@${commentAuthorUsername} commented on your post '${post.title}'`;
       await this.notificationService.createNotification(post.authorId, content);
     }
 
-    // 2. Notify Mentions
     const mentions = dto.content.match(/@([a-zA-Z0-9_]+)/g);
     if (mentions) {
-      const uniqueMentions = [...new Set(mentions)]; // Remove duplicates
+      const uniqueMentions = [...new Set(mentions)];
 
       for (const mention of uniqueMentions) {
-        const username = mention.substring(1); // Remove @
-
-        // Skip self-mention (though unlikely to find self by username if not checked, but good to be safe)
-        // Also skip if the mentioned user is the one commenting (handled by user.id !== userId check below)
+        const username = mention.substring(1);
 
         const user = await this.usersService.findOne({ username });
+        // Do not notify the commenter for self-mentions
         if (user && user.id !== userId) {
           const content = `@${commentAuthorUsername} mentioned you in a comment`;
           await this.notificationService.createNotification(user.id, content);

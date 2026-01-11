@@ -11,21 +11,19 @@ export class OptionalAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
 
-    // If no token is provided, proceed as guest (allow access)
+    // Allow unauthenticated access when Authorization header is absent
     if (!authHeader) {
       return true;
     }
 
-    // If token is provided, use standard JWT validation
-    // This will throw 401 if the token is invalid
     return super.canActivate(context);
   }
 
   handleRequest(err: any, user: any, info: any, context: any) {
-    // If no token provided, just return null user, don't throw error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    // Treat missing Authorization header as unauthenticated
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- Passport context is untyped
     const req = context.switchToHttp().getRequest();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Request headers are untyped
     const authHeader = req.headers['authorization'];
     if (!authHeader) {
       return null;
@@ -33,7 +31,7 @@ export class OptionalAuthGuard extends AuthGuard('jwt') {
     if (err || !user) {
       throw err || new UnauthorizedException();
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Passport user is untyped
     return user;
   }
 }

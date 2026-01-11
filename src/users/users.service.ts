@@ -28,7 +28,6 @@ export class UsersService {
     return user;
   }
 
-
   async create(data: Prisma.UserCreateInput): Promise<User> {
     // Generate unique username
     let username = data.username;

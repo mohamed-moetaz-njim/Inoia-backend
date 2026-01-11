@@ -99,14 +99,9 @@ Always prioritize safety and well-being`;
     });
 
     if (!conversation) {
-      // In case we want to allow creating by posting to a new ID, but typically we'd use a separate create endpoint or handle 'new'
-      // For now assume valid conversationId passed, or handle elsewhere.
-      // If we want to support "start new conversation" logic via this method, we might need adjustments.
-      // Let's assume strict checking for now.
       throw new InternalServerErrorException('Conversation not found');
     }
 
-    // 2. Save User Message
     const userMessage = await this.prisma.aiMessage.create({
       data: {
         conversationId,
@@ -115,18 +110,15 @@ Always prioritize safety and well-being`;
       },
     });
 
-    // Generate title if this is the first message
     if (conversation.messages.length === 0) {
       await this.generateConversationTitle(conversationId, content);
     }
 
-    // Update conversation last activity
     await this.prisma.aiConversation.update({
       where: { id: conversationId },
       data: { lastActivityAt: new Date() },
     });
 
-    // 3. Analyze Message
     let analysis: AnalysisResult;
     try {
       analysis = await this.analyzeMessage(content, conversation.messages);
@@ -141,7 +133,6 @@ Always prioritize safety and well-being`;
       };
     }
 
-    // 4. Check Risk Level & Generate Response
     let aiResponseContent: string;
 
     try {
@@ -156,14 +147,13 @@ Always prioritize safety and well-being`;
         "I'm having trouble responding right now. Please try again.";
     }
 
-    // Enforce safety message for high risk
+    // Append safety guidance for elevated risk (7+)
     if (analysis.riskLevel >= 7) {
       const safetyMessage =
         "\n\nIf you're going through a difficult time, please consider reaching out to a trusted adult or a mental health professional. You don't have to face this alone.";
       aiResponseContent += safetyMessage;
     }
 
-    // 5. Save AI Response
     const aiMessage = await this.prisma.aiMessage.create({
       data: {
         conversationId,
@@ -175,7 +165,7 @@ Always prioritize safety and well-being`;
     return {
       userMessage,
       aiMessage,
-      analysis, // Optional: return analysis for debugging/client usage if needed
+      analysis,
     };
   }
 
@@ -189,7 +179,7 @@ Always prioritize safety and well-being`;
       const title = result.response
         .text()
         .trim()
-        .replace(/^["']|["']$/g, ''); // Clean quotes
+        .replace(/^["']|["']$/g, '');
 
       await this.prisma.aiConversation.update({
         where: { id: conversationId },
