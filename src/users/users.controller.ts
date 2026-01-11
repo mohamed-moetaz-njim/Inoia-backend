@@ -45,11 +45,6 @@ export class UsersController {
     if (!user) throw new NotFoundException('User not found');
     if (user.usernameLocked) throw new ForbiddenException('Username is locked');
 
-    // I can't track count without extra field.
-    // Assuming infinite rerolls allowed until locked, as per schema limitations.
-    // Or maybe the frontend tracks it?
-    // I'll generate a new one.
-
     let username = generatePseudonym();
     // Ensure unique (simple retry)
     let retries = 5;

@@ -105,12 +105,7 @@ export class AuthService {
     );
     if (!passwordMatches) throw new UnauthorizedException('Access Denied');
 
-    // Check if verified? The prompt says "Users must verify email before full account activation".
-    // I will allow login but maybe restrict access using Roles?
-    // Or I should block login if not verified?
-    // "Users must verify email before full account activation" -> usually implies login works but features are limited, OR login fails.
-    // Given "Backend is zero-trust", let's assume we issue tokens but maybe they have a 'verified' claim or we check verificationToken is null.
-    // Let's assume we block login if verificationToken is still present (meaning pending).
+    // Block login if email is not verified
     if (user.verificationToken) {
       throw new ForbiddenException('Email not verified');
     }

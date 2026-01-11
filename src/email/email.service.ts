@@ -55,10 +55,7 @@ export class EmailService {
     } catch (error) {
       if (error instanceof InternalServerErrorException) throw error;
       this.logger.error(`Failed to send email to ${email}`, error);
-      // Don't block signup if email fails, especially in dev/test
-      // User said "Real email verification", so if email fails, user can't verify.
-      // But logging it is safer than crashing the request for now.
-      // throw new InternalServerErrorException('Failed to send verification email');
+      // Log error and return null without throwing to prevent blocking registration flow
       return null;
     }
   }
@@ -101,8 +98,7 @@ export class EmailService {
       return response;
     } catch (error) {
       this.logger.error(`Failed to send reset email to ${email}`, error);
-      // Fail silently to avoid enumeration attacks in the controller layer?
-      // But internally we should know.
+      // Suppress error to avoid potential enumeration vectors
     }
   }
 }

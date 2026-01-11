@@ -161,17 +161,7 @@ export class ReportService {
       if (status === ReportStatus.RESOLVED) actionType = 'REPORT_RESOLVED';
       if (status === ReportStatus.DISMISSED) actionType = 'REPORT_DISMISSED';
 
-      // If content was deleted, maybe we want a specific action or just log it in the note?
-      // Prompt says: "actionType: e.g., 'REPORT_RESOLVED', 'REPORT_DISMISSED', 'CONTENT_REMOVED'"
-      // I will log the primary action. If content removed, maybe log that too or prioritize it?
-      // I'll stick to the report status change action type, but if deleteContent is true, maybe 'CONTENT_REMOVED' is better?
-      // Or I can create two logs?
-      // The prompt says "Always create an AdminAction log entry... actionType: e.g. ... CONTENT_REMOVED"
-      // If I resolve AND delete, I'll use CONTENT_REMOVED as it's more significant, or REPORT_RESOLVED.
-      // Let's use REPORT_RESOLVED and append note about deletion, or create two entries?
-      // "Always create an AdminAction log entry" implies one.
-      // If deleteContent is true, I will use CONTENT_REMOVED. Else REPORT_RESOLVED/DISMISSED.
-
+      // Prioritize content removal action type if content is deleted
       if (status === ReportStatus.RESOLVED && deleteContent) {
         actionType = 'CONTENT_REMOVED';
       }

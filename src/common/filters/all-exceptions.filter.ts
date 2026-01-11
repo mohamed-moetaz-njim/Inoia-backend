@@ -28,7 +28,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       httpStatus = exception.getStatus();
       const responseBody = exception.getResponse();
-      // console.log('HttpException caught', httpStatus, responseBody);
 
       const messageObj: any = responseBody;
 

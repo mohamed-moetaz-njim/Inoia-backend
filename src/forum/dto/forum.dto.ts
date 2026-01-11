@@ -92,11 +92,6 @@ export class AuthorDto {
   @ApiPropertyOptional()
   therapistProfile?: {
     certificationReference?: string;
-    // Add other public fields here if Schema had them (e.g. workplace, bio)
-    // For now, schema only has certificationReference in TherapistVerification
-    // But requirement says "Display name, Optional public profile fields (workplace, bio)"
-    // The Schema `TherapistVerification` only has `certificationReference`.
-    // I will expose `certificationReference` as a placeholder for "public profile".
   };
 }
 

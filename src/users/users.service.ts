@@ -28,6 +28,7 @@ export class UsersService {
     return user;
   }
 
+
   async create(data: Prisma.UserCreateInput): Promise<User> {
     // Generate unique username
     let username = data.username;
@@ -63,7 +64,7 @@ export class UsersService {
     return user;
   }
 
-  // For internal use where we might want to see deleted users (e.g. admin)
+  // Find user including soft-deleted ones (e.g. for admin usage)
   async findOneIncludeDeleted(
     where: Prisma.UserWhereUniqueInput,
   ): Promise<User | null> {

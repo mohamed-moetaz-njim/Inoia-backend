@@ -92,7 +92,7 @@ Always prioritize safety and well-being`;
     conversationId: string,
     content: string,
   ) {
-    // 1. Verify conversation ownership or create new if not exists (though controller should handle id)
+    // Verify conversation ownership
     const conversation = await this.prisma.aiConversation.findUnique({
       where: { id: conversationId, userId },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
