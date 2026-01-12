@@ -1,0 +1,34 @@
+services:
+  # Web Service Configuration
+  - type: web
+    name: inoia-backend
+    env: node
+    plan: free # or starter
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: FRONTEND_URL
+        value: https://your-frontend-domain.com # Placeholder - update with actual frontend domain
+      # DATABASE_URL is auto-injected by Render when linking the database (Postgres)
+      # 
+      # IMPORTANT: The following sensitive environment variables MUST be added manually 
+      # in the Render Dashboard -> Environment tab after deployment.
+      # DO NOT commit them to this file or Git.
+      #
+      # - JWT_SECRET
+      # - JWT_REFRESH_SECRET
+      # - RESEND_API_KEY
+      # - GEMINI_API_KEY
+      # - ADMIN_EMAIL
+      # - ADMIN_PASSWORD
+
+databases:
+  # Postgres Database Configuration
+  - name: inoia-db
+    plan: free
+    databaseName: inoia_db
+    # Internal connection string will be auto-injected into the web service as DATABASE_URL
