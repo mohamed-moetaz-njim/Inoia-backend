@@ -70,6 +70,32 @@ describe('EmailService', () => {
       });
     });
 
+    it('should use FRONTEND_URL from config', async () => {
+      // Override mock for this test
+      (configService.get as jest.Mock).mockImplementation((key) => {
+        if (key === 'FRONTEND_URL') return 'https://production.com';
+        return null;
+      });
+
+      mockResend.emails.send.mockResolvedValue({
+        data: { id: 'email_id' },
+        error: null,
+      });
+
+      const email = 'user@example.com';
+      const token = 'verification_token';
+
+      await service.sendVerificationEmail(email, token);
+
+      expect(mockResend.emails.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringContaining(
+            'https://production.com/verify?token=verification_token',
+          ),
+        }),
+      );
+    });
+
     it('should handle failure gracefully (return null) if sending fails', async () => {
       mockResend.emails.send.mockResolvedValue({
         data: null,

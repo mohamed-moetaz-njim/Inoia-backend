@@ -1,15 +1,18 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -92,6 +95,20 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Email successfully verified.' })
   verifyEmail(@Body('email') email: string, @Body('token') token: string) {
     return this.authService.verifyEmail(email, token);
+  }
+
+  @Public()
+  @Get('verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email via token (link)' })
+  @ApiQuery({ name: 'token', required: true, description: 'Verification token from email' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully. You can now log in.',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or expired verification token.' })
+  verifyEmailLink(@Query('token') token: string) {
+    return this.authService.verifyEmail(undefined, token);
   }
 
   @Public()

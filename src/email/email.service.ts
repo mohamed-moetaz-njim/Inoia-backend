@@ -16,6 +16,7 @@ export class EmailService {
   }
 
   async sendVerificationEmail(email: string, token: string) {
+    // Use FRONTEND_URL env variable for production links, fallback to localhost for development
     const frontendUrl =
       this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
     const verificationLink = `${frontendUrl}/verify?token=${token}`;

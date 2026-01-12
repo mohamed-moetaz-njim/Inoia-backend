@@ -103,7 +103,7 @@ describe('AuthService', () => {
       });
       expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(
         dto.email,
-        'mock-uuid',
+        '1.mock-uuid',
       );
       expect(result).toHaveProperty('userId', '1');
     });
@@ -221,7 +221,7 @@ describe('AuthService', () => {
       updatedAt: new Date(),
     };
 
-    it('should verify email if token is valid', async () => {
+    it('should verify email if token is valid (email lookup)', async () => {
       mockUsersService.findOne.mockResolvedValue(user);
       (argon2.verify as jest.Mock).mockResolvedValue(true);
 
@@ -233,11 +233,27 @@ describe('AuthService', () => {
       });
     });
 
+    it('should verify email if token is composite (userId lookup)', async () => {
+      mockUsersService.findOne.mockResolvedValue(user);
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      // Composite token: 1.uuid
+      await service.verifyEmail(undefined, '1.token');
+
+      // Verify should be called with extracted token
+      expect(argon2.verify).toHaveBeenCalledWith('hashed-token', 'token');
+      expect(mockUsersService.findOne).toHaveBeenCalledWith({ id: '1' });
+      expect(mockUsersService.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: { verificationToken: null },
+      });
+    });
+
     it('should throw BadRequest if user not found or already verified', async () => {
       mockUsersService.findOne.mockResolvedValue(null);
-      await expect(service.verifyEmail('t', 't')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.verifyEmail('test@example.com', 'token'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequest if token invalid', async () => {
@@ -309,7 +325,7 @@ describe('AuthService', () => {
       });
       expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(
         'test@example.com',
-        'mock-uuid',
+        '1.mock-uuid',
       );
     });
 

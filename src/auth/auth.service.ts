@@ -45,7 +45,9 @@ export class AuthService {
       data: { verificationToken: hashedVerificationToken },
     });
 
-    await this.emailService.sendVerificationEmail(dto.email, verificationToken);
+    // Send composite token (userId.token) to allow lookup by token
+    const compositeToken = `${user.id}.${verificationToken}`;
+    await this.emailService.sendVerificationEmail(dto.email, compositeToken);
 
     return {
       message:
@@ -79,7 +81,9 @@ export class AuthService {
       data: { verificationToken: hashedVerificationToken },
     });
 
-    await this.emailService.sendVerificationEmail(email, verificationToken);
+    // Send composite token
+    const compositeToken = `${user.id}.${verificationToken}`;
+    await this.emailService.sendVerificationEmail(email, compositeToken);
 
     return {
       message:
@@ -130,14 +134,31 @@ export class AuthService {
     return tokens;
   }
 
-  async verifyEmail(emailInput: string, token: string) {
-    const email = emailInput.toLowerCase();
-    const user = await this.usersService.findOne({ email });
-    if (!user || !user.verificationToken)
-      throw new BadRequestException('Invalid request');
+  async verifyEmail(emailInput: string | undefined, token: string) {
+    let user;
+    let actualToken = token;
 
-    const matches = await argon2.verify(user.verificationToken, token);
-    if (!matches) throw new BadRequestException('Invalid token');
+    // Check if token is composite (userId.token)
+    if (token.includes('.')) {
+      const [userId, uuid] = token.split('.');
+      // Basic validation of UUID format could be added here
+      if (userId && uuid) {
+        user = await this.usersService.findOne({ id: userId });
+        actualToken = uuid;
+      }
+    }
+
+    // Fallback to email lookup if provided and user not found yet
+    if (!user && emailInput) {
+      const email = emailInput.toLowerCase();
+      user = await this.usersService.findOne({ email });
+    }
+
+    if (!user || !user.verificationToken)
+      throw new BadRequestException('Invalid request or user already verified');
+
+    const matches = await argon2.verify(user.verificationToken, actualToken);
+    if (!matches) throw new BadRequestException('Invalid or expired verification token');
 
     // Verification link expires after 24 hours
     const now = new Date();
@@ -154,7 +175,7 @@ export class AuthService {
       where: { id: user.id },
       data: { verificationToken: null }, // Clear token to mark as verified
     });
-    return { message: 'Email verified successfully' };
+    return { message: 'Email verified successfully. You can now log in.' };
   }
 
   async updateRefreshToken(userId: string, rt: string) {
