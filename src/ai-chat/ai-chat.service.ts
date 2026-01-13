@@ -20,6 +20,7 @@ export class AiChatService {
   private readonly logger = new Logger(AiChatService.name);
   private genAI: GoogleGenerativeAI;
   private model: GenerativeModel;
+  private modelName: string;
 
   private readonly SYSTEM_PROMPT = `You are a compassionate, non-judgmental AI listener for students facing mental health challenges.
 Your role is to:
@@ -39,9 +40,11 @@ Always prioritize safety and well-being`;
     if (!apiKey) {
       throw new InternalServerErrorException('GEMINI_API_KEY is not defined');
     }
+    this.modelName =
+      this.configService.get<string>('GEMINI_MODEL') || 'gemini-2.5-flash';
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: this.modelName,
     });
   }
 
@@ -123,7 +126,14 @@ Always prioritize safety and well-being`;
     try {
       analysis = await this.analyzeMessage(content, conversation.messages);
     } catch (error) {
-      this.logger.error('Analysis failed');
+      this.logger.error('Gemini call failed', {
+        step: 'analyzeMessage',
+        errorName: error.name,
+        errorMessage: error.message,
+        errorCode: error.code,
+        httpStatus: error.status || error.response?.status,
+        model: this.modelName,
+      });
       // Fallback safe analysis
       analysis = {
         emotionalState: 'unknown',
@@ -142,7 +152,14 @@ Always prioritize safety and well-being`;
         conversation.messages,
       );
     } catch (error) {
-      this.logger.error('Response generation failed');
+      this.logger.error('Gemini call failed', {
+        step: 'generateResponse',
+        errorName: error.name,
+        errorMessage: error.message,
+        errorCode: error.code,
+        httpStatus: error.status || error.response?.status,
+        model: this.modelName,
+      });
       aiResponseContent =
         "I'm having trouble responding right now. Please try again.";
     }
@@ -186,7 +203,14 @@ Always prioritize safety and well-being`;
         data: { title },
       });
     } catch (error) {
-      this.logger.error('Title generation failed');
+      this.logger.error('Gemini call failed', {
+        step: 'generateConversationTitle',
+        errorName: error.name,
+        errorMessage: error.message,
+        errorCode: error.code,
+        httpStatus: error.status || error.response?.status,
+        model: this.modelName,
+      });
       const fallbackTitle =
         firstMessage.substring(0, 30) + (firstMessage.length > 30 ? '...' : '');
       await this.prisma.aiConversation.update({

@@ -36,7 +36,11 @@ describe('AiChatService', () => {
   };
 
   const mockConfigService = {
-    get: jest.fn().mockReturnValue('fake-api-key'),
+    get: jest.fn((key: string) => {
+      if (key === 'GEMINI_API_KEY') return 'fake-api-key';
+      if (key === 'GEMINI_MODEL') return 'gemini-2.5-flash';
+      return null;
+    }),
   };
 
   beforeEach(async () => {
@@ -143,6 +147,12 @@ describe('AiChatService', () => {
               riskLevel: 9,
               recommendedApproach: 'alert',
             }),
+        },
+      });
+
+      mockGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () => 'Supportive response',
         },
       });
 
