@@ -1,69 +1,70 @@
-# Inoia — Mental Health Support Platform (Backend)
+# Inoia Backend
 
-A secure, scalable, and production-ready backend for a student-focused mental health community platform.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/language-TypeScript-3178C6.svg)
+![NestJS](https://img.shields.io/badge/framework-NestJS-E0234E.svg)
+
+Secure backend API for Inoia, a mental health support platform for students (community forum, AI chat listener, moderation tools).
 
 ## Features
-- **Full Authentication**: JWT with refresh tokens, Argon2 hashing, email verification, password reset
-- **Role-Based Access Control**: STUDENT, THERAPIST, and ADMIN roles
-- **Forum System**: Posts, comments, pagination, ownership enforcement
-- **Voting System**: Upvote/downvote posts and comments with net score calculation
-- **Notifications**: Real-time alerts for mentions and comments, with unread counting
-- **Content Reporting & Moderation**: User reports with admin review, resolution, and audit trail
-- **Therapist Verification**: Dedicated workflow for credential review
-- **AI Chat**: Compassionate, safe, and privacy-focused mental health listener powered by Gemini
-- **Safety & Security**: Soft deletes, rate limiting, input validation, Helmet headers
-- **Comprehensive Testing**: End-to-end and high-coverage unit tests
+
+- **Secure Auth**: JWT authentication with email verification and Argon2 hashing
+- **Community Forum**: Posts, comments, voting system, and pagination
+- **Moderation**: Content reporting system with moderation tools
+- **Notifications**: In-app notifications system
+- **AI Support**: Gemini-powered AI chat listener with risk detection and conversation titles
+- **Therapist Profiles**: Public profiles for verified therapists
 
 ## Tech Stack
-- NestJS (TypeScript)
-- Prisma ORM
-- PostgreSQL
-- Docker
-- Security: JWT, Argon2, Helmet, ThrottlerGuard
 
-## Setup
+- **Framework**: NestJS (TypeScript)
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT, Argon2
+- **AI**: Google Gemini
+- **Email**: Resend
+- **Documentation**: Swagger/OpenAPI
 
-1. **Environment**
+## Local Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd Inoia-backend
+   ```
+
+2. **Configure Environment**
+   Copy the example environment file:
    ```bash
    cp .env.example .env
-   # Fill in your values (especially DATABASE_URL and JWT secrets)
    ```
+   Fill in the required variables in `.env` (especially `GEMINI_API_KEY`, `DATABASE_URL`, etc.).
 
-2. **Start Database**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Apply Migrations**
-   ```bash
-   npx prisma migrate dev
-   ```
-
-4. **Run Application**
+3. **Install Dependencies**
    ```bash
    npm install
+   ```
+
+4. **Setup Database**
+   ```bash
+   npx prisma generate
+   # Ensure your database is running, then apply migrations if needed
+   # npx prisma migrate dev
+   ```
+
+5. **Run the Application**
+   ```bash
    npm run start:dev
    ```
 
-## API Documentation
+## Deployment
 
-The backend features fully interactive Swagger/OpenAPI documentation.
-
-- **Local Development**: [http://localhost:3000/api](http://localhost:3000/api)
-- **Features**:
-  - Explore all endpoints (Auth, Forum, Votes, Notifications, AI Chat, etc.)
-  - Test requests directly from the browser
-  - View request/response schemas and examples
-  - Authorize with JWT token
-
-## Testing
-
-```bash
-npm run test          # Unit tests
-npm run test:e2e      # End-to-end tests
-npm run test:cov      # Coverage report
-```
+Currently live on Render at:  
+`https://inoia-backend-bmcn.onrender.com/api` (Swagger docs available)
 
 ## Status
-**Active Development** — Core features are production-ready.
-Built with care for student mental health.
+
+Actively developed backend for Inoia student mental health platform — core features implemented and production-tested.
+
+## License
+
+MIT
