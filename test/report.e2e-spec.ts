@@ -6,7 +6,6 @@ import {
   Module,
 } from '@nestjs/common';
 import request from 'supertest';
-// import { AppModule } from './../src/app.module'; // Don't import AppModule
 import { ReportModule } from './../src/report/report.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { ReportStatus, Role } from '@prisma/client';

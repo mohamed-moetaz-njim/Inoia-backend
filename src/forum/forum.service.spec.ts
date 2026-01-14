@@ -74,7 +74,7 @@ describe('ForumService', () => {
     updatedAt: new Date(),
     deletedAt: null,
     author: mockAuthor,
-    votes: [], // Added votes array
+    votes: [], 
   };
 
   describe('findAllPosts', () => {
@@ -279,7 +279,7 @@ describe('ForumService', () => {
           id: 'c1',
           author: mockAuthor,
           content: 'c',
-          votes: [], // Added votes array
+          votes: [],
         },
       ]);
       prisma.comment.count.mockResolvedValue(1);

@@ -211,9 +211,6 @@ describe('Authorization (e2e)', () => {
     });
 
     it('Auth endpoint prevents rapid requests', async () => {
-      // This might be flaky in test environment depending on Throttler config.
-      // Config is 10 requests per minute.
-      // Let's fire 15.
       const reqs = [];
       for (let i = 0; i < 15; i++) {
         reqs.push(

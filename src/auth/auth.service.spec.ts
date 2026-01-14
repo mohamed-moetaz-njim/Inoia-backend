@@ -76,7 +76,7 @@ describe('AuthService', () => {
 
   describe('signup', () => {
     const dto = {
-      email: 'yamiigraphics@gmail.com',
+      email: 'student@inoia.space',
       password: 'password123',
     };
 
@@ -116,7 +116,7 @@ describe('AuthService', () => {
 
   describe('signin', () => {
     const dto = {
-      email: 'yamiigraphics@gmail.com',
+      email: 'student@inoia.space',
       password: 'password123',
     };
     const user = {
@@ -225,7 +225,7 @@ describe('AuthService', () => {
       mockUsersService.findOne.mockResolvedValue(user);
       (argon2.verify as jest.Mock).mockResolvedValue(true);
 
-      await service.verifyEmail('yamiigraphics@gmail.com', 'token');
+      await service.verifyEmail('student@inoia.space', 'token');
 
       expect(mockUsersService.update).toHaveBeenCalledWith({
         where: { id: '1' },
@@ -268,7 +268,7 @@ describe('AuthService', () => {
   describe('passwordReset', () => {
     it('requestPasswordReset should set resetToken', async () => {
       mockUsersService.findOne.mockResolvedValue({ id: '1' });
-      await service.requestPasswordReset('yamiigraphics@gmail.com');
+      await service.requestPasswordReset('student@inoia.space');
       expect(mockUsersService.update).toHaveBeenCalledWith({
         where: { id: '1' },
         data: expect.objectContaining({
@@ -277,7 +277,7 @@ describe('AuthService', () => {
         }),
       });
       expect(mockEmailService.sendPasswordResetEmail).toHaveBeenCalledWith(
-        'yamiigraphics@gmail.com',
+        'student@inoia.space',
         'mock-uuid',
       );
     });
@@ -346,7 +346,7 @@ describe('AuthService', () => {
       });
 
       const result = await service.resendVerificationEmail(
-        'yamiigraphics@gmail.com',
+        'student@inoia.space',
       );
 
       expect(mockUsersService.update).not.toHaveBeenCalled();
