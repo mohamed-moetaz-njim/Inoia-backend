@@ -47,13 +47,40 @@ export class ReportController {
   @ApiOperation({ summary: 'Get all reports (Admin)' })
   @ApiResponse({ status: 200, description: 'Return all reports.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: ReportStatus })
+  @ApiQuery({ name: 'type', required: false, enum: ['Post', 'Comment'] })
   findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 50,
-    @Query('status') status?: ReportStatus,
-    @Query('type') type?: 'Post' | 'Comment',
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+    @Query('type') type?: string,
   ) {
-    return this.reportService.findAll(+page, +limit, status, type);
+    const pageNum = page ? Math.max(1, +page) : 1;
+    const limitNum = limit ? Math.max(1, +limit) : 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Normalize status
+    let normalizedStatus: ReportStatus | undefined;
+    if (status) {
+      const upperStatus = status.toUpperCase();
+      if (Object.values(ReportStatus).includes(upperStatus as ReportStatus)) {
+        normalizedStatus = upperStatus as ReportStatus;
+      }
+    }
+
+    // Normalize type
+    let normalizedType: 'Post' | 'Comment' | undefined;
+    if (type) {
+      // Allow "post", "POST", "Post" -> "Post"
+      // Allow "comment", "COMMENT", "Comment" -> "Comment"
+      const lowerType = type.toLowerCase();
+      if (lowerType === 'post') normalizedType = 'Post';
+      if (lowerType === 'comment') normalizedType = 'Comment';
+    }
+
+    return this.reportService.findAll(skip, limitNum, normalizedStatus, normalizedType);
   }
 
   @Roles(Role.ADMIN)

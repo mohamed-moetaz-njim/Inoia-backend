@@ -155,6 +155,48 @@ describe('ReportController (e2e)', () => {
         .set('x-role', Role.STUDENT)
         .expect(403);
     });
+
+    it('should handle pagination and filters', () => {
+      mockPrismaService.report.findMany.mockResolvedValue([]);
+      mockPrismaService.report.count.mockResolvedValue(0);
+
+      return request(app.getHttpServer())
+        .get('/admin/reports?page=2&limit=10&status=pending&type=post')
+        .set('x-role', Role.ADMIN)
+        .expect(200)
+        .expect((res) => {
+          expect(mockPrismaService.report.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+              skip: 10,
+              take: 10,
+              where: expect.objectContaining({
+                status: 'PENDING',
+                postId: { not: null },
+              }),
+            }),
+          );
+        });
+    });
+
+    it('should normalize status and type case insensitive', () => {
+      mockPrismaService.report.findMany.mockResolvedValue([]);
+      mockPrismaService.report.count.mockResolvedValue(0);
+
+      return request(app.getHttpServer())
+        .get('/admin/reports?status=resolved&type=comment')
+        .set('x-role', Role.ADMIN)
+        .expect(200)
+        .expect((res) => {
+          expect(mockPrismaService.report.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+              where: expect.objectContaining({
+                status: 'RESOLVED',
+                commentId: { not: null },
+              }),
+            }),
+          );
+        });
+    });
   });
 
   describe('/admin/reports/:id (PATCH)', () => {

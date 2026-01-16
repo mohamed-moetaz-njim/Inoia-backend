@@ -2,6 +2,8 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReportDto } from './dto/create-report.dto';
@@ -10,6 +12,8 @@ import { ReportStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ReportService {
+  private readonly logger = new Logger(ReportService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async createReport(userId: string, dto: CreateReportDto) {
@@ -74,67 +78,70 @@ export class ReportService {
   }
 
   async findAll(
-    page: number = 1,
-    limit: number = 50,
+    skip: number,
+    take: number,
     status?: ReportStatus,
     type?: 'Post' | 'Comment',
   ) {
-    const skip = (page - 1) * limit;
+    try {
+      const where: Prisma.ReportWhereInput = {};
+      if (status) where.status = status;
+      if (type === 'Post') where.postId = { not: null };
+      if (type === 'Comment') where.commentId = { not: null };
 
-    const where: Prisma.ReportWhereInput = {};
-    if (status) where.status = status;
-    if (type === 'Post') where.postId = { not: null };
-    if (type === 'Comment') where.commentId = { not: null };
-
-    const [reports, total] = await Promise.all([
-      this.prisma.report.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          reporter: {
-            select: { id: true, username: true },
-          },
-          post: {
-            select: {
-              id: true,
-              title: true,
-              content: true,
-              author: { select: { id: true, username: true } },
+      const [reports, total] = await Promise.all([
+        this.prisma.report.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            reporter: {
+              select: { id: true, username: true },
+            },
+            post: {
+              select: {
+                id: true,
+                title: true,
+                content: true,
+                author: { select: { id: true, username: true } },
+              },
+            },
+            comment: {
+              select: {
+                id: true,
+                content: true,
+                author: { select: { id: true, username: true } },
+              },
             },
           },
-          comment: {
-            select: {
-              id: true,
-              content: true,
-              author: { select: { id: true, username: true } },
-            },
-          },
+        }),
+        this.prisma.report.count({ where }),
+      ]);
+
+      return {
+        data: reports.map((r) => ({
+          id: r.id,
+          reporterId: r.reporterId,
+          reportedUser: r.post?.author?.username || r.comment?.author?.username,
+          type: r.postId ? 'Post' : 'Comment',
+          preview: r.post?.title || r.comment?.content?.substring(0, 50),
+          fullContent: r.post?.content || r.comment?.content,
+          status: r.status,
+          reason: r.reason,
+          createdAt: r.createdAt,
+        })),
+        meta: {
+          total,
+          page: Math.floor(skip / take) + 1,
+          limit: take,
+          totalPages: Math.ceil(total / take),
         },
-      }),
-      this.prisma.report.count({ where }),
-    ]);
-
-    return {
-      data: reports.map((r) => ({
-        id: r.id,
-        reporterId: r.reporterId,
-        reportedUser: r.post?.author?.username || r.comment?.author?.username,
-        type: r.postId ? 'Post' : 'Comment',
-        preview: r.post?.title || r.comment?.content?.substring(0, 50),
-        fullContent: r.post?.content || r.comment?.content,
-        status: r.status,
-        reason: r.reason,
-        createdAt: r.createdAt,
-      })),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+      };
+    } catch (error) {
+      this.logger.error(`Error in findAll reports: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to fetch reports');
+    }
   }
 
   async update(id: string, dto: UpdateReportDto, adminId: string) {
