@@ -14,8 +14,15 @@ async function bootstrap() {
   // Security Middleware
   app.use(helmet());
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL'),
-    credentials: false, // JWT is in header, no cookies
+    origin: configService
+      .get<string>('CORS_ORIGINS')
+      ?.split(',')
+      .map((origin) => origin.trim()) || [
+      'http://localhost:3000',
+      'https://inoia.space',
+    ],
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });
 
   // Global Validation

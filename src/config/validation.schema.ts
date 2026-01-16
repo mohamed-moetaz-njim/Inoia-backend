@@ -11,6 +11,7 @@ export const validationSchema = Joi.object({
   JWT_EXPIRES_IN: Joi.string().default('15m'),
   REFRESH_EXPIRES_IN: Joi.string().default('7d'),
   FRONTEND_URL: Joi.string().optional(),
+  CORS_ORIGINS: Joi.string().optional().default('http://localhost:3000,https://inoia.space'),
   GEMINI_API_KEY: Joi.string().required(),
   RESEND_API_KEY: Joi.string().required(),
   FROM_EMAIL: Joi.string().required(),
