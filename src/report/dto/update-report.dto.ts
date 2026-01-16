@@ -8,9 +8,17 @@ import {
 import { ReportStatus } from '@prisma/client';
 
 export class UpdateReportDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(ReportStatus)
-  status: ReportStatus;
+  status?: ReportStatus;
+
+  @IsOptional()
+  @IsString()
+  action?: 'approve' | 'reject';
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 
   @IsOptional()
   @IsString()

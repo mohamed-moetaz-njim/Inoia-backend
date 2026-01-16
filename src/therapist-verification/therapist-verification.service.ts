@@ -50,10 +50,34 @@ export class TherapistVerificationService {
   }
 
   async listRequests(status?: VerificationStatus) {
-    return this.prisma.therapistVerification.findMany({
+    const requests = await this.prisma.therapistVerification.findMany({
       where: status ? { status } : {},
-      include: { user: { select: { id: true, email: true, username: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            profession: true,
+            workplace: true,
+            bio: true,
+          },
+        },
+      },
     });
+
+    return requests.map((req) => ({
+      id: req.id,
+      username: req.user.username,
+      email: req.user.email,
+      profession: req.user.profession,
+      workplace: req.user.workplace,
+      bio: req.user.bio,
+      credentials: req.certificationReference, // Mapping certificationReference to credentials/documentUrl
+      documentUrl: req.certificationReference,
+      status: req.status,
+      createdAt: req.createdAt,
+    }));
   }
 
   async approveRequest(requestId: string, adminId: string) {

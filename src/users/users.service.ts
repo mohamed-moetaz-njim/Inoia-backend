@@ -163,6 +163,44 @@ export class UsersService {
     return this.prisma.user.findUnique({ where });
   }
 
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    cursor?: Prisma.UserWhereUniqueInput;
+    where?: Prisma.UserWhereInput;
+    orderBy?: Prisma.UserOrderByWithRelationInput;
+  }) {
+    const { skip, take, cursor, where, orderBy } = params;
+    const users = await this.prisma.user.findMany({
+      skip,
+      take,
+      cursor,
+      where,
+      orderBy,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        isBanned: true,
+        _count: {
+          select: { posts: true },
+        },
+      },
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      status: user.isBanned ? 'Banned' : 'Active',
+      postCount: user._count.posts,
+    }));
+  }
+
   async update(params: {
     where: Prisma.UserWhereUniqueInput;
     data: Prisma.UserUpdateInput;

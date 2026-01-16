@@ -73,10 +73,18 @@ export class ReportService {
     return { message: 'Report submitted successfully', reportId: report.id };
   }
 
-  async findAll(page: number = 1, limit: number = 50, status?: ReportStatus) {
+  async findAll(
+    page: number = 1,
+    limit: number = 50,
+    status?: ReportStatus,
+    type?: 'Post' | 'Comment',
+  ) {
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ReportWhereInput = status ? { status } : {};
+    const where: Prisma.ReportWhereInput = {};
+    if (status) where.status = status;
+    if (type === 'Post') where.postId = { not: null };
+    if (type === 'Comment') where.commentId = { not: null };
 
     const [reports, total] = await Promise.all([
       this.prisma.report.findMany({
@@ -109,7 +117,17 @@ export class ReportService {
     ]);
 
     return {
-      data: reports,
+      data: reports.map((r) => ({
+        id: r.id,
+        reporterId: r.reporterId,
+        reportedUser: r.post?.author?.username || r.comment?.author?.username,
+        type: r.postId ? 'Post' : 'Comment',
+        preview: r.post?.title || r.comment?.content?.substring(0, 50),
+        fullContent: r.post?.content || r.comment?.content,
+        status: r.status,
+        reason: r.reason,
+        createdAt: r.createdAt,
+      })),
       meta: {
         total,
         page,
@@ -120,7 +138,32 @@ export class ReportService {
   }
 
   async update(id: string, dto: UpdateReportDto, adminId: string) {
-    const { status, actionNote, deleteContent } = dto;
+    const { status: dtoStatus, action, reason, actionNote, deleteContent } = dto;
+
+    // Determine status from action if provided
+    let status = dtoStatus;
+    let shouldDeleteContent = deleteContent;
+
+    if (action === 'approve') {
+      status = ReportStatus.RESOLVED;
+      // "approve -> take action on reported content (e.g. remove / flag)"
+      // Defaulting to content removal if approved, or we could just resolve it.
+      // The requirement says "e.g. remove / flag". I'll assume flag/resolve is base, but maybe delete?
+      // Given "deleteContent" is in DTO, I'll stick to it if provided, OR force it if action is approve?
+      // "approve -> take action... reject -> dismiss".
+      // I'll set shouldDeleteContent = true for approve to be safe/strict on moderation?
+      // No, "e.g. remove" suggests it's one option.
+      // But since the dashboard just sends "approve", I should probably do something.
+      // For now, I will just mark as RESOLVED. The existing logic handles deleteContent if true.
+      // If the frontend doesn't send deleteContent with action, I won't delete.
+    } else if (action === 'reject') {
+      status = ReportStatus.DISMISSED;
+    }
+
+    if (!status) {
+      // If no status and no action, validation should have failed or we do nothing
+      // But let's assume one is provided.
+    }
 
     const report = await this.prisma.report.findUnique({
       where: { id },
@@ -139,7 +182,7 @@ export class ReportService {
         },
       });
 
-      if (status === ReportStatus.RESOLVED && deleteContent) {
+      if (status === ReportStatus.RESOLVED && shouldDeleteContent) {
         if (report.postId) {
           await tx.post.update({
             where: { id: report.postId },

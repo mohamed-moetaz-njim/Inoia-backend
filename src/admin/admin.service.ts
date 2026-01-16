@@ -23,7 +23,7 @@ export class AdminService {
           adminId,
           actionType: 'BAN_USER',
           targetUserId,
-          // reason, // Field does not exist in schema
+          details: reason ? JSON.stringify({ reason }) : undefined,
         },
       });
 

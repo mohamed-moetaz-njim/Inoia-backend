@@ -50,8 +50,9 @@ export class ReportController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 50,
     @Query('status') status?: ReportStatus,
+    @Query('type') type?: 'Post' | 'Comment',
   ) {
-    return this.reportService.findAll(+page, +limit, status);
+    return this.reportService.findAll(+page, +limit, status, type);
   }
 
   @Roles(Role.ADMIN)

@@ -7,24 +7,63 @@ import {
   HttpStatus,
   ForbiddenException,
   NotFoundException,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { GetCurrentUserId } from '../common/decorators';
+import { GetCurrentUserId, Roles } from '../common/decorators';
 import { generatePseudonym } from '../common/utils';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from './dto/user-response.dto';
+import { Role } from '@prisma/client';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get all users (Admin only)' })
+  @ApiQuery({ name: 'role', required: false, enum: Role })
+  @ApiQuery({ name: 'status', required: false, enum: ['Active', 'Banned'] })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Return list of users.' })
+  async findAll(
+    @Query('role') role?: Role,
+    @Query('status') status?: 'Active' | 'Banned',
+    @Query('search') search?: string,
+  ) {
+    const where: any = {};
+
+    if (role) {
+      where.role = role;
+    }
+
+    if (status) {
+      where.isBanned = status === 'Banned';
+    }
+
+    if (search) {
+      where.OR = [
+        { username: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.usersService.findAll({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
