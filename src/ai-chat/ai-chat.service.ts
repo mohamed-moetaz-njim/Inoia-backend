@@ -18,8 +18,7 @@ export interface AnalysisResult {
 @Injectable()
 export class AiChatService {
   private readonly logger = new Logger(AiChatService.name);
-  private genAI: GoogleGenerativeAI;
-  private model: GenerativeModel;
+  private models: GenerativeModel[] = [];
   private modelName: string;
 
   private readonly SYSTEM_PROMPT = `You are a compassionate, non-judgmental AI listener for students facing mental health challenges.
@@ -36,16 +35,59 @@ Always prioritize safety and well-being`;
     private configService: ConfigService,
     private prisma: PrismaService,
   ) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
+    const apiKeysString = this.configService.get<string>('GEMINI_API_KEY');
+    if (!apiKeysString) {
       throw new InternalServerErrorException('GEMINI_API_KEY is not defined');
     }
     this.modelName =
-      this.configService.get<string>('GEMINI_MODEL') || 'gemini-2.5-flash';
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({
-      model: this.modelName,
+      this.configService.get<string>('GEMINI_MODEL') || 'gemini-1.5-flash';
+
+    const keys = apiKeysString.split(',').map((k) => k.trim()).filter((k) => k);
+
+    if (keys.length === 0) {
+      throw new InternalServerErrorException('No valid GEMINI_API_KEY found');
+    }
+
+    this.models = keys.map((key) => {
+      const genAI = new GoogleGenerativeAI(key);
+      return genAI.getGenerativeModel({
+        model: this.modelName,
+      });
     });
+
+    this.logger.log(`Initialized AI Chat Service with ${this.models.length} API key(s)`);
+  }
+
+  /**
+   * Executes a Gemini operation with fallback to secondary keys if the first one fails.
+   */
+  private async executeWithFallback<T>(
+    operation: (model: GenerativeModel) => Promise<T>,
+  ): Promise<T> {
+    let lastError: any;
+
+    for (let i = 0; i < this.models.length; i++) {
+      try {
+        return await operation(this.models[i]);
+      } catch (error) {
+        lastError = error;
+        const isLastModel = i === this.models.length - 1;
+        
+        // Log warning but continue to next model
+        this.logger.warn(
+          `Gemini call failed with key #${i + 1}. ${isLastModel ? 'No more keys to try.' : 'Retrying with next key...'}`,
+          {
+             errorName: error.name,
+             errorMessage: error.message,
+             httpStatus: error.status || error.response?.status,
+          }
+        );
+
+        if (isLastModel) break;
+      }
+    }
+
+    throw lastError;
   }
 
   async getUserConversations(userId: string) {
@@ -192,7 +234,11 @@ Always prioritize safety and well-being`;
   ) {
     try {
       const prompt = `Summarize this message into a short conversation title (3-8 words, natural and empathetic): '${firstMessage}'`;
-      const result = await this.model.generateContent(prompt);
+      
+      const result = await this.executeWithFallback((model) => 
+        model.generateContent(prompt)
+      );
+
       const title = result.response
         .text()
         .trim()
@@ -243,7 +289,9 @@ Always prioritize safety and well-being`;
       .join('\n')}
     `;
 
-    const result = await this.model.generateContent(prompt);
+    const result = await this.executeWithFallback((model) => 
+      model.generateContent(prompt)
+    );
     const response = result.response;
     const text = response.text();
 
@@ -283,7 +331,9 @@ Always prioritize safety and well-being`;
     Draft a compassionate, short, and supportive response.
     `;
 
-    const result = await this.model.generateContent(prompt);
+    const result = await this.executeWithFallback((model) => 
+      model.generateContent(prompt)
+    );
     return result.response.text();
   }
 }
