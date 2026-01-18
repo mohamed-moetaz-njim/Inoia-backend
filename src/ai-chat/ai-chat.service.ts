@@ -41,7 +41,7 @@ Always prioritize safety and well-being`;
       throw new InternalServerErrorException('GEMINI_API_KEY is not defined');
     }
     this.modelName =
-      this.configService.get<string>('GEMINI_MODEL') || 'gemini-1.5-flash';
+      this.configService.get<string>('GEMINI_MODEL') || 'gemini-2.5-flash';
 
     const keys = apiKeysString.split(',').map((k) => k.trim()).filter((k) => k);
 
