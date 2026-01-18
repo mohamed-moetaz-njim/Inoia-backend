@@ -60,33 +60,53 @@ Always prioritize safety and well-being`;
 
   /**
    * Executes a Gemini operation with fallback to secondary keys if the first one fails.
+   * Maintains state of the currently working key to avoid hitting rate-limited keys repeatedly.
    */
   private async executeWithFallback<T>(
     operation: (model: GenerativeModel) => Promise<T>,
   ): Promise<T> {
     let lastError: any;
+    const initialIndex = this.currentKeyIndex;
 
-    for (let i = 0; i < this.models.length; i++) {
+    // Try each key exactly once, starting from the current working key
+    for (let attempt = 0; attempt < this.models.length; attempt++) {
+      // Calculate which key to use for this attempt
+      // We use the class-level currentKeyIndex which might change during execution if other requests fail
+      // But for this specific request loop, we want to try (start + 0), (start + 1), etc.
+      // However, to respect global state changes, let's trust the currentKeyIndex logic:
+      // If we fail, we rotate the global index.
+      
+      const model = this.models[this.currentKeyIndex];
+
       try {
-        return await operation(this.models[i]);
+        return await operation(model);
       } catch (error) {
         lastError = error;
-        const isLastModel = i === this.models.length - 1;
+        const status = error.status || error.response?.status;
         
-        // Log warning but continue to next model
+        // 429 = Too Many Requests
+        // 503 = Service Unavailable
+        // 500 = Internal Server Error
+        // If status is undefined, it might be a network error (retryable)
+        // If status is 400-499 (except 429), it's likely a bad request (not retryable)
+        const isRetryable = !status || status === 429 || status >= 500;
+
+        if (!isRetryable) {
+          this.logger.error(`Gemini non-retryable error (Status: ${status})`, error);
+          throw error;
+        }
+
+        // Log the failure and rotation
         this.logger.warn(
-          `Gemini call failed with key #${i + 1}. ${isLastModel ? 'No more keys to try.' : 'Retrying with next key...'}`,
-          {
-             errorName: error.name,
-             errorMessage: error.message,
-             httpStatus: error.status || error.response?.status,
-          }
+          `Gemini call failed with key #${this.currentKeyIndex + 1} (Status: ${status || 'Unknown'}). Rotating to next key...`,
         );
 
-        if (isLastModel) break;
+        // Rotate to the next key for the next attempt (and for future requests)
+        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.models.length;
       }
     }
 
+    this.logger.error(`All ${this.models.length} Gemini API keys exhausted. Last error: ${lastError.message}`);
     throw lastError;
   }
 
