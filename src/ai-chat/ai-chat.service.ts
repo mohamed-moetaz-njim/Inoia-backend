@@ -19,6 +19,7 @@ export interface AnalysisResult {
 export class AiChatService {
   private readonly logger = new Logger(AiChatService.name);
   private models: GenerativeModel[] = [];
+  private currentKeyIndex = 0;
   private modelName: string;
 
   private readonly SYSTEM_PROMPT = `You are a compassionate, non-judgmental AI listener for students facing mental health challenges.
