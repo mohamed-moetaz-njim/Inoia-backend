@@ -15,6 +15,8 @@ services:
         value: https://www.inoia.space
       - key: CORS_ORIGINS
         value: https://inoia.space,https://www.inoia.space
+      - key: BACKEND_URL
+        value: https://inoia-backend-bmcn.onrender.com
       # DATABASE_URL is auto-injected by Render when linking the database (Postgres)
       # 
       # IMPORTANT: The following sensitive environment variables MUST be added manually 

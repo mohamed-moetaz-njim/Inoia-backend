@@ -16,10 +16,11 @@ export class EmailService {
   }
 
   async sendVerificationEmail(email: string, token: string) {
-    // Use FRONTEND_URL env variable for production links, fallback to localhost for development
-    const frontendUrl =
-      this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
-    const verificationLink = `${frontendUrl}/verify?token=${token}`;
+    // Use BACKEND_URL for direct verification link, fallback to localhost for development
+    const backendUrl =
+      this.configService.get('BACKEND_URL') || 'http://localhost:3000';
+    // Link points to Backend API -> which redirects to Frontend
+    const verificationLink = `${backendUrl}/auth/verify?token=${token}`;
     const fromEmail = this.configService.getOrThrow('FROM_EMAIL');
 
     try {

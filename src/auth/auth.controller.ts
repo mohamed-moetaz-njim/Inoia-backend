@@ -6,8 +6,11 @@ import {
   HttpStatus,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
@@ -28,7 +31,10 @@ import { ResendVerificationDto } from './dto/resend-verification.dto';
 @UseGuards(ThrottlerGuard)
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
   @Public()
   @Post('signup')
@@ -103,12 +109,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify email via token (link)' })
   @ApiQuery({ name: 'token', required: true, description: 'Verification token from email' })
   @ApiResponse({
-    status: 200,
-    description: 'Email verified successfully. You can now log in.',
+    status: 302,
+    description: 'Email verified successfully. Redirects to frontend login.',
   })
-  @ApiResponse({ status: 400, description: 'Invalid or expired verification token.' })
-  verifyEmailLink(@Query('token') token: string) {
-    return this.authService.verifyEmail(undefined, token);
+  @ApiResponse({ status: 302, description: 'Invalid or expired verification token. Redirects to frontend with error.' })
+  async verifyEmailLink(@Query('token') token: string, @Res() res: Response) {
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    try {
+      await this.authService.verifyEmail(undefined, token);
+      return res.redirect(`${frontendUrl}/home`);
+    } catch (error) {
+      return res.redirect(`${frontendUrl}/home`);
+    }
   }
 
   @Public()

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { ConfigService } from '@nestjs/config';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 describe('AuthController', () => {
@@ -13,6 +14,12 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: {},
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('http://localhost:3000'),
+          },
         },
       ],
     })

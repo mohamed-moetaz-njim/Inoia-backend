@@ -70,10 +70,10 @@ describe('EmailService', () => {
       });
     });
 
-    it('should use FRONTEND_URL from config', async () => {
+    it('should use BACKEND_URL from config', async () => {
       // Override mock for this test
       (configService.get as jest.Mock).mockImplementation((key) => {
-        if (key === 'FRONTEND_URL') return 'https://production.com';
+        if (key === 'BACKEND_URL') return 'https://api.production.com';
         return null;
       });
 
@@ -90,7 +90,7 @@ describe('EmailService', () => {
       expect(mockResend.emails.send).toHaveBeenCalledWith(
         expect.objectContaining({
           html: expect.stringContaining(
-            'https://production.com/verify?token=verification_token',
+            'https://api.production.com/auth/verify?token=verification_token',
           ),
         }),
       );
