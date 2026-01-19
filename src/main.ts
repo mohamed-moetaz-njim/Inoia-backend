@@ -20,6 +20,7 @@ async function bootstrap() {
       .map((origin) => origin.trim()) || [
       'http://localhost:3000',
       'https://inoia.space',
+      'https://www.inoia.space',
     ],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

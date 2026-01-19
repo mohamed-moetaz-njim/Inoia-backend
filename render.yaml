@@ -12,7 +12,9 @@ services:
       - key: PORT
         value: 3000
       - key: FRONTEND_URL
-        value: https://your-frontend-domain.com # Placeholder - update with actual frontend domain
+        value: https://www.inoia.space
+      - key: CORS_ORIGINS
+        value: https://inoia.space,https://www.inoia.space
       # DATABASE_URL is auto-injected by Render when linking the database (Postgres)
       # 
       # IMPORTANT: The following sensitive environment variables MUST be added manually 
