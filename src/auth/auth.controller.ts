@@ -117,9 +117,9 @@ export class AuthController {
     const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
     try {
       await this.authService.verifyEmail(undefined, token);
-      return res.redirect(`${frontendUrl}/home`);
+      return res.redirect(`${frontendUrl}`);
     } catch (error) {
-      return res.redirect(`${frontendUrl}/home`);
+      return res.redirect(`${frontendUrl}`);
     }
   }
 
