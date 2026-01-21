@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
@@ -139,6 +140,49 @@ Always prioritize safety and well-being`;
     }
 
     return conversation;
+  }
+
+  async deleteConversation(userId: string, conversationId: string) {
+    const conversation = await this.prisma.aiConversation.findUnique({
+      where: { id: conversationId, userId },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    // Delete messages first (no cascade in schema)
+    await this.prisma.aiMessage.deleteMany({
+      where: { conversationId },
+    });
+
+    return this.prisma.aiConversation.delete({
+      where: { id: conversationId },
+    });
+  }
+
+  async clearUserConversations(userId: string) {
+    const conversations = await this.prisma.aiConversation.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+
+    const conversationIds = conversations.map((c) => c.id);
+
+    if (conversationIds.length > 0) {
+      this.logger.log(`Deleting ${conversationIds.length} conversations for user ${userId}`);
+      // Delete messages for all conversations
+      await this.prisma.aiMessage.deleteMany({
+        where: { conversationId: { in: conversationIds } },
+      });
+
+      // Delete conversations
+      await this.prisma.aiConversation.deleteMany({
+        where: { userId },
+      });
+    }
+
+    return { count: conversationIds.length };
   }
 
   async createConversation(userId: string) {

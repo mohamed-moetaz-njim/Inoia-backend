@@ -2,6 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
+  HttpCode,
+  HttpStatus,
   Body,
   Param,
   ParseUUIDPipe,
@@ -17,6 +20,7 @@ import {
   ApiTags,
   ApiOkResponse,
   ApiCreatedResponse,
+  ApiResponse,
   ApiParam,
 } from '@nestjs/swagger';
 import { AiConversationSummaryDto } from './dto/ai-conversation-summary.dto';
@@ -88,5 +92,26 @@ export class AiChatController {
       conversationId,
       createMessageDto.content,
     );
+  }
+
+  @Delete('conversations')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete all user conversations' })
+  @ApiResponse({ status: 204, description: 'All conversations deleted.' })
+  async clearConversations(@GetCurrentUserId() userId: string) {
+    await this.aiChatService.clearUserConversations(userId);
+  }
+
+  @Delete('conversations/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a specific conversation' })
+  @ApiParam({ name: 'id', description: 'Conversation UUID' })
+  @ApiResponse({ status: 204, description: 'Conversation deleted.' })
+  @ApiResponse({ status: 404, description: 'Conversation not found.' })
+  async deleteConversation(
+    @GetCurrentUserId() userId: string,
+    @Param('id', ParseUUIDPipe) conversationId: string,
+  ) {
+    await this.aiChatService.deleteConversation(userId, conversationId);
   }
 }
