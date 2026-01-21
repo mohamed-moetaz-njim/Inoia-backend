@@ -3,6 +3,7 @@ import { AdminService } from './admin.service';
 import { GetCurrentUserId, Roles } from '../common/decorators';
 import { Role } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { BanUserDto } from './dto/ban-user.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth('JWT-auth')
@@ -17,9 +18,9 @@ export class AdminController {
   banUser(
     @Param('id') id: string,
     @GetCurrentUserId() adminId: string,
-    @Body('reason') reason: string,
+    @Body() dto: BanUserDto,
   ) {
-    return this.adminService.banUser(adminId, id, reason);
+    return this.adminService.banUser(adminId, id, dto.reason);
   }
 
   @Post('users/:id/unban')

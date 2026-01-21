@@ -9,6 +9,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SubmitVerificationDto } from './dto/submit-verification.dto';
 
 @ApiTags('Therapist Verification')
 @ApiBearerAuth('JWT-auth')
@@ -23,11 +24,11 @@ export class TherapistVerificationController {
   @ApiResponse({ status: 201, description: 'Request submitted successfully.' })
   submitRequest(
     @GetCurrentUserId() userId: string,
-    @Body('certificationReference') certificationReference: string,
+    @Body() dto: SubmitVerificationDto,
   ) {
     return this.verificationService.submitRequest(
       userId,
-      certificationReference,
+      dto.certificationReference,
     );
   }
 

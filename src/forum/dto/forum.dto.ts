@@ -67,6 +67,20 @@ export class UpdatePostDto {
   content: string;
 }
 
+export class UpdateCommentDto {
+  @ApiProperty({
+    example: 'Updated comment content...',
+    description: 'Comment content',
+    minLength: 1,
+    maxLength: 1000,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(1000)
+  content: string;
+}
+
 export class CreateCommentDto {
   @ApiProperty({
     example: 'Try deep breathing exercises.',

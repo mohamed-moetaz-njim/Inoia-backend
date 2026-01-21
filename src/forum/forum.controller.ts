@@ -15,6 +15,7 @@ import {
   CreatePostDto,
   PaginationQueryDto,
   UpdatePostDto,
+  UpdateCommentDto,
 } from './dto/forum.dto';
 import { GetCurrentUser, GetCurrentUserId, Public } from '../common/decorators';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
@@ -133,5 +134,18 @@ export class ForumController {
     @GetCurrentUserId() userId: string,
   ) {
     return this.forumService.deleteComment(userId, id);
+  }
+
+  @Patch('comments/:id')
+  @UseGuards(AtGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update a comment' })
+  @ApiResponse({ status: 200, description: 'Comment successfully updated.' })
+  async updateComment(
+    @Param('id') id: string,
+    @GetCurrentUserId() userId: string,
+    @Body() dto: UpdateCommentDto,
+  ) {
+    return this.forumService.updateComment(userId, id, dto);
   }
 }

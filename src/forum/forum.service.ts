@@ -5,6 +5,7 @@ import {
   CreatePostDto,
   PaginationQueryDto,
   UpdatePostDto,
+  UpdateCommentDto,
 } from './dto/forum.dto';
 import { ensureOwnership } from '../common/utils/authorization.utils';
 import { Role } from '@prisma/client';
@@ -376,6 +377,34 @@ export class ForumService {
       }
     }
 
+    return {
+      ...commentData,
+      author: this.mapAuthor(author),
+    };
+  }
+
+  async updateComment(userId: string, commentId: string, dto: UpdateCommentDto) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment) throw new NotFoundException('Comment not found');
+    if (comment.deletedAt) throw new NotFoundException('Comment not found');
+
+    ensureOwnership(comment.authorId, userId);
+
+    const updated = await this.prisma.comment.update({
+      where: { id: commentId },
+      data: {
+        content: dto.content,
+      },
+      include: {
+        author: {
+          select: this.getAuthorSelect(),
+        },
+      },
+    });
+
+    const { author, ...commentData } = updated;
     return {
       ...commentData,
       author: this.mapAuthor(author),
