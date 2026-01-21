@@ -57,10 +57,6 @@ import { validationSchema } from './config/validation.schema';
     },
     {
       provide: APP_GUARD,
-      useClass: AtGuard,
-    },
-    {
-      provide: APP_GUARD,
       useClass: RolesGuard,
     },
   ],
