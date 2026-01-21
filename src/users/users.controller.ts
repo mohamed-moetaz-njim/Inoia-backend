@@ -2,7 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
+  Body,
   HttpCode,
   HttpStatus,
   ForbiddenException,
@@ -22,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from './dto/user-response.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Role } from '@prisma/client';
 
 @ApiTags('Users')
@@ -73,6 +76,20 @@ export class UsersController {
     const user = await this.usersService.findProfile(userId);
     if (!user) throw new NotFoundException('User not found');
     return plainToInstance(UserResponseDto, user);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated.' })
+  async updateMe(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    const updatedUser = await this.usersService.update({
+      where: { id: userId },
+      data: dto,
+    });
+    return plainToInstance(UserResponseDto, updatedUser);
   }
 
   @Post('reroll-username')
