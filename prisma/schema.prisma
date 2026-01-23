@@ -76,7 +76,7 @@ model TherapistVerification {
   id                    String   @id @default(uuid())
   userId                String   @unique
   status                VerificationStatus
-  certificationReference String
+  certificationReference String?
   verifiedByAdminId     String?
   verifiedAt            DateTime?
   createdAt             DateTime @default(now())

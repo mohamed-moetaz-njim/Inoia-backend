@@ -14,7 +14,7 @@ export class TherapistVerificationService {
     private usersService: UsersService,
   ) {}
 
-  async submitRequest(userId: string, certificationReference: string) {
+  async submitRequest(userId: string, certificationReference?: string) {
     const user = await this.usersService.findOne({ id: userId });
     if (!user) throw new NotFoundException('User not found');
 

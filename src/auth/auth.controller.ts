@@ -24,6 +24,7 @@ import { Public, GetCurrentUserId, GetCurrentUser } from '../common/decorators';
 import { RtGuard } from '../common/guards';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { RegisterTherapistDto } from './dto/register-therapist.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @ApiTags('Authentication')
@@ -44,6 +45,16 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'Credentials taken.' })
   signup(@Body() dto: RegisterDto) {
     return this.authService.signup(dto);
+  }
+
+  @Public()
+  @Post('signup-therapist')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new user and submit therapist verification' })
+  @ApiResponse({ status: 201, description: 'User registered and verification submitted.' })
+  @ApiResponse({ status: 409, description: 'Email already exists.' })
+  signupTherapist(@Body() dto: RegisterTherapistDto) {
+    return this.authService.signupTherapist(dto);
   }
 
   @Public()

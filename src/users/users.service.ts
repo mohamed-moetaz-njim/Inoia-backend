@@ -150,6 +150,35 @@ export class UsersService {
     });
   }
 
+  async createInTx(tx: Prisma.TransactionClient, data: Prisma.UserCreateInput): Promise<User> {
+    // Generate unique username
+    let username = data.username;
+    if (!username) {
+      // Retry logic for unique username
+      let retries = 5;
+      while (retries > 0) {
+        const candidate = generatePseudonym();
+        const exists = await tx.user.findUnique({
+          where: { username: candidate },
+        });
+        if (!exists) {
+          username = candidate;
+          break;
+        }
+        retries--;
+      }
+      if (!username)
+        throw new ConflictException('Could not generate unique username');
+    }
+
+    return tx.user.create({
+      data: {
+        ...data,
+        username,
+      },
+    });
+  }
+
   async findOne(where: Prisma.UserWhereUniqueInput): Promise<User | null> {
     const user = await this.prisma.user.findUnique({ where });
     if (user && user.deletedAt) return null; // Soft delete check

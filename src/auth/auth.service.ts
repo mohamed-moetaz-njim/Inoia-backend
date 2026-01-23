@@ -56,6 +56,50 @@ export class AuthService {
     };
   }
 
+  async signupTherapist(dto: RegisterTherapistDto) {
+    const email = dto.email.toLowerCase();
+    const emailExists = await this.usersService.isEmailTaken(email);
+    if (emailExists) throw new ConflictException('Email already exists');
+
+    const passwordHash = await argon2.hash(dto.password);
+    const verificationToken = uuidv4();
+    const hashedVerificationToken = await argon2.hash(verificationToken);
+
+    // Use transaction to ensure both User and Verification Request are created
+    const user = await this.prisma.$transaction(async (tx) => {
+      const newUser = await this.usersService.createInTx(tx, {
+        email,
+        passwordHash,
+        role: Role.STUDENT, // Starts as student until approved
+        username: '', // Generated server-side
+        profession: dto.profession,
+        workplace: dto.workplace,
+        bio: dto.bio,
+        verificationToken: hashedVerificationToken,
+      });
+
+      await tx.therapistVerification.create({
+        data: {
+          userId: newUser.id,
+          certificationReference: dto.certificationReference,
+          status: VerificationStatus.PENDING,
+        },
+      });
+
+      return newUser;
+    });
+
+    // Send composite token (userId.token)
+    const compositeToken = `${user.id}.${verificationToken}`;
+    await this.emailService.sendVerificationEmail(dto.email, compositeToken);
+
+    return {
+      message:
+        'Therapist application received. Please check your email to verify your account.',
+      userId: user.id,
+    };
+  }
+
   async resendVerificationEmail(emailInput: string) {
     const email = emailInput.toLowerCase();
     const user = await this.usersService.findOne({ email });
