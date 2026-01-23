@@ -67,6 +67,7 @@ model User {
   adminActions          AdminAction[] @relation("AdminActions")
 
   // Public Profile Fields (Therapist Only)
+  fullName   String?
   profession String?
   workplace  String?
   bio        String?

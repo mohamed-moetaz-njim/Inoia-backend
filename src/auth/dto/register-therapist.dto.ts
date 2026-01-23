@@ -1,8 +1,18 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { RegisterDto } from './auth.dto';
 
 export class RegisterTherapistDto extends RegisterDto {
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'Full real name of the therapist',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  fullName!: string;
+
   @ApiPropertyOptional({
     example: 'https://registry.psychology.org/users/12345',
     description: 'Link or reference to professional certification (Optional)',

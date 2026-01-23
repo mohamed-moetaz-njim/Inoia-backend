@@ -79,6 +79,7 @@ export class AuthService {
         profession: dto.profession,
         workplace: dto.workplace,
         bio: dto.bio,
+        fullName: dto.fullName,
         verificationToken: hashedVerificationToken,
       });
 

@@ -13,6 +13,7 @@ export const safeUserSelect = {
   isBanned: true,
   usernameLocked: true,
   deletedAt: true,
+  fullName: true,
 };
 
 @Injectable()
@@ -102,6 +103,7 @@ export class UsersService {
 
     return {
       ...baseProfile,
+      fullName: user.fullName,
       profession: user.profession,
       workplace: user.workplace,
       bio: user.bio,
