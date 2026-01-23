@@ -10,9 +10,12 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
-import { Role } from '@prisma/client';
+import { RegisterTherapistDto } from './dto/register-therapist.dto';
+import { Role, VerificationStatus } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from '../email/email.service';
+
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +24,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private emailService: EmailService,
+    private prisma: PrismaService,
   ) {}
 
   async signup(dto: RegisterDto) {
@@ -81,7 +85,7 @@ export class AuthService {
       await tx.therapistVerification.create({
         data: {
           userId: newUser.id,
-          certificationReference: dto.certificationReference,
+          certificationReference: dto.certificationReference || '',
           status: VerificationStatus.PENDING,
         },
       });
